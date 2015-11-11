@@ -1,0 +1,1 @@
+Crunchyrip.exe akamego-kill

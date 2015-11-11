@@ -1,1 +1,1 @@
-go build -o Crunchyrip.exe main.go
+go build -o bin/win32/Crunchyrip.exe main.go

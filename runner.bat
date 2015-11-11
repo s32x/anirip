@@ -1,1 +1,1 @@
-Crunchyrip.exe akamego-kill
+bin/win32/Crunchyrip.exe

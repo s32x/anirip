@@ -20,6 +20,7 @@ func main() {
 		//TODO Request the users login credentials and build a cookie for required auth requests
 
 		// First we as the user for what show they would like to rip
+		fmt.Println("\n")
 		getStandardUserInput("Please enter a show name : ", &showSearchTerm)
 
 		// First we get the showname/path of the show we would like to download
@@ -29,14 +30,6 @@ func main() {
 			continue
 		}
 		fmt.Println("\nDetermined a valid show name of : --- " + show.Title + " ---")
-
-		// Asks the user if the title of the series recieved is correct before proceeding...
-		input := ""
-		getStandardUserInput("Is this correct? : ", &input)
-		if input == "N" || input == "n" || input == "no" || input == "NO" || input == "nO" {
-			fmt.Println(">>> Sorry about that! We're not fucking perfect! \n")
-			continue
-		}
 
 		// Gets the episodes for the show recieved
 		show, err = getEpisodes(show)
@@ -48,7 +41,7 @@ func main() {
 		// Attempts to access and print the titles of all seasons recieved
 		fmt.Println("\nBelow is a list of all seasons found ...\n")
 		for i := 0; i < len(show.Seasons); i++ {
-			fmt.Println("	- " + show.Seasons[i].Title + " (" + strconv.Itoa(len(show.Seasons[i].Episodes)) + " Episodes)")
+			fmt.Println("\tSeason " + strconv.Itoa(show.Seasons[i].Number) + " - " + show.Seasons[i].Title + " (" + strconv.Itoa(len(show.Seasons[i].Episodes)) + " Episodes)")
 		}
 
 		//TODO RTMP Dumps each episode in a seperate goroutine...

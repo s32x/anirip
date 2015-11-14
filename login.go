@@ -18,19 +18,15 @@ type CrunchyCookie struct {
 	Cookies []*http.Cookie
 }
 
-var (
-	userAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36"
-)
-
 // Attempts to log the user in, store a cookie and return the login status
-func login() (bool, error) {
+func login() ([]*http.Cookie, error) {
 	user := ""
 	pass := ""
 
 	// First checks to see if we already have a cookie config
 	user, crunchyCookie, exists, err := getStoredCookies()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// If we don't already have cookies, get new ones
@@ -42,19 +38,19 @@ func login() (bool, error) {
 
 		crunchyCookie, err = getNewCookies(user, pass)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 	}
 
 	// Test the cookies we currently have to be sure they are still valid
 	valid, err := validateCookies(user, crunchyCookie)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if valid && exists {
-		fmt.Println(">>> Logged in as " + crunchyCookie.User)
-		return true, nil
+		fmt.Printf(">> Logged in as " + crunchyCookie.User + "\n\n")
+		return crunchyCookie.Cookies, nil
 	}
 
 	// If the cookies we have are currently valid,
@@ -64,29 +60,29 @@ func login() (bool, error) {
 		crunchyCookieEncoder := gob.NewEncoder(&crunchyCookieBytes)
 		err = crunchyCookieEncoder.Encode(crunchyCookie)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
-		ioutil.WriteFile("cookies.txt", crunchyCookieBytes.Bytes(), 0644)
+		ioutil.WriteFile(cookiesFile, crunchyCookieBytes.Bytes(), 0644)
 
-		return true, nil
+		return crunchyCookie.Cookies, nil
 	}
-	return false, nil
+	return nil, nil
 }
 
-// Gets stored cookies found in cookies.txt
+// Gets stored cookies found in cookiesFile
 func getStoredCookies() (string, CrunchyCookie, bool, error) {
 	// Checks if file exists - will return its contents if so
-	if _, err := os.Stat("cookies.txt"); err == nil {
+	if _, err := os.Stat(cookiesFile); err == nil {
 
-		crunchyCookieBytes, err := ioutil.ReadFile("cookies.txt")
+		crunchyCookieBytes, err := ioutil.ReadFile(cookiesFile)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("cookies.txt")
+			_ = os.Remove(cookiesFile)
 			return "", CrunchyCookie{}, false, nil
 		}
 
-		// Creates a decoder to decode the bytes found in our cookies.txt
+		// Creates a decoder to decode the bytes found in our cookiesFile
 		crunchyCookieBuffer := bytes.NewBuffer(crunchyCookieBytes)
 		crunchyCookieDecoder := gob.NewDecoder(crunchyCookieBuffer)
 
@@ -95,7 +91,7 @@ func getStoredCookies() (string, CrunchyCookie, bool, error) {
 		err = crunchyCookieDecoder.Decode(&crunchyCookie)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("cookies.txt")
+			_ = os.Remove(cookiesFile)
 			return "", CrunchyCookie{}, false, nil
 		}
 		return crunchyCookie.User, crunchyCookie, true, nil

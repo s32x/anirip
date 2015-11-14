@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 )
 
@@ -10,8 +11,9 @@ var (
 	showdesiredSeasons  = ""
 	showDesiredQuality  = ""
 	showDesiredLanguage = ""
-	hostURL             = "http://www.crunchyroll.com"
-	searchURL           = hostURL + "/search?from=&q="
+	userAgent           = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36"
+	cookiesFile         = "cookies.txt" // store cookies in "cookies" file
+	userCookies         = []*http.Cookie{}
 )
 
 func main() {
@@ -24,10 +26,11 @@ func main() {
 
 	// Ask the user first if they would like their session to use cookies
 	accountStatus := ""
-	GetStandardUserInput("Would you like to log into your Crunchyroll account [Y/N]?", &accountStatus)
+	GetStandardUserInput("Would you like to log into your Crunchyroll account [Y/N]? ", &accountStatus)
 	if accountStatus == "Y" || accountStatus == "y" {
-		loginStatus, err := login()
-		if !loginStatus || err != nil {
+		cookies, err := login()
+		userCookies = cookies
+		if len(userCookies) == 0 {
 			fmt.Println(">>> There was an issue while attempting to log in : ", err)
 		}
 	}
@@ -61,6 +64,13 @@ func main() {
 		GetStandardUserInput("\nEnter the seasons you wish to download : ", &showdesiredSeasons)
 		GetStandardUserInput("\nEnter a subtitle language ('NONE' for no subs) : ", &showDesiredLanguage)
 		GetStandardUserInput("\nEnter your desired video quality : ", &showDesiredQuality)
+
+		// TODO decide on a file naming structure
+
+		_, _, err = getEpisodeStreams("RpcApiVideoPlayer_GetStandardConfig", show.Seasons[0].Episodes[0], userCookies)
+		if err != nil {
+			fmt.Println(">>> There was an issue while getting XML for " + show.Seasons[0].Episodes[0].Title)
+		}
 
 		//TODO RTMP Dumps each episode in a seperate goroutine...
 	}

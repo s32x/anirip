@@ -27,10 +27,11 @@ type Episode struct {
 	Title       string
 	Description string
 	Number      float64
+	Path        string
 	URL         string
 }
 
-// Takes the passed show name and searches crunchyroll,
+// Takes the passed show name and es crunchyroll,
 // taking the first showname found as the show
 func searchShowPath(showName string) (Show, error) {
 
@@ -39,10 +40,10 @@ func searchShowPath(showName string) (Show, error) {
 
 	// Attempts to grab the contents of the search URL
 	fmt.Println("\nAttempting to determine the URL for passed show : " + showName)
-	fmt.Println(">> Accessing search URL : " + searchURL + encodedShowName)
+	fmt.Println(">> Accessing search URL : " + "http://www.crunchyroll.com/search?from=&q=" + encodedShowName)
 
 	// Gets the html of the search page we're looking for
-	searchDoc, err := goquery.NewDocument(searchURL + encodedShowName)
+	searchDoc, err := goquery.NewDocument("http://www.crunchyroll.com/search?from=&q=" + encodedShowName)
 	if err != nil {
 		return Show{}, err
 	}
@@ -60,7 +61,7 @@ func searchShowPath(showName string) (Show, error) {
 	}
 
 	// Gets the first result from our parse search and returns the path if its not ""/store/" or "/crunchygay/"
-	firstPath := strings.Replace(firstEpisodeURL, hostURL+"/", "", 1)
+	firstPath := strings.Replace(firstEpisodeURL, "http://www.crunchyroll.com/", "", 1)
 	firstShowPath := strings.Split(firstPath, "/")[0]               // Gets only the first path name (ideally a show name)
 	if firstShowPath == "store" || firstShowPath == "crunchycast" { // tf is a crunchycast?
 		return Show{}, nil
@@ -70,7 +71,7 @@ func searchShowPath(showName string) (Show, error) {
 	return Show{
 		Title: firstSeriesTitle, // Series name recieved from javascript json
 		Path:  firstShowPath,    // Show path retrieved from a href url
-		URL:   hostURL + "/" + firstShowPath,
+		URL:   "http://www.crunchyroll.com/" + firstShowPath,
 	}, nil
 }
 
@@ -100,14 +101,15 @@ func getEpisodes(show Show) (Show, error) {
 				episodeTitle := strings.TrimSpace(strings.Replace(episode.Find("span.series-title.block.ellipsis").First().Text(), "\n", "", 1))
 				episodeDescription := strings.TrimSpace(episode.Find("p.short-desc").First().Text())
 				episodeNumber, _ := strconv.ParseFloat(strings.Replace(episodeTitle, "Episode ", "", 1), 64)
-				episodeURL, _ := episode.Find("a").First().Attr("href")
-				episodeID, _ := strconv.Atoi(episodeURL[len(episodeURL)-6:])
+				episodePath, _ := episode.Find("a").First().Attr("href")
+				episodeID, _ := strconv.Atoi(episodePath[len(episodePath)-6:])
 				show.Seasons[i2].Episodes = append(show.Seasons[i2].Episodes, Episode{
 					ID:          episodeID,
 					Title:       episodeTitle,
 					Description: episodeDescription,
 					Number:      episodeNumber,
-					URL:         hostURL + episodeURL,
+					Path:        episodePath,
+					URL:         "http://www.crunchyroll.com" + episodePath,
 				})
 			})
 		})

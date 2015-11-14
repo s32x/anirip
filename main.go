@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strconv"
 )
 
@@ -18,26 +16,25 @@ var (
 
 func main() {
 	// Displays the usual title banner for the application
-	fmt.Println("\n-------------------------------------------------------------------------")
-	fmt.Println("----------------======== CrunchyRip v0.1 by Viz_ ========----------------")
-	fmt.Println("-------------------------------------------------------------------------\n")
+	fmt.Printf("\n-------------------------------------------------------------------------\n")
+	fmt.Printf("----------------======== CrunchyRip v0.1 by Viz_ ========----------------\n")
+	fmt.Printf("-------------------------------------------------------------------------\n\n")
 
 	//TODO Form a VPN connection and output the IP address what will be used for the connection
 
-	// Asks if the user has an account and if they would login to get premium content
+	// Ask the user first if they would like their session to use cookies
 	accountStatus := ""
-	getStandardUserInput("Do you have a CrunchyRoll Premium account [Y/N]?", &accountStatus)
-
-	username := ""
-	password := ""
-	fmt.Println("First, Please login to your CrunchyRoll account in order to access your Premium content.\n")
-	getStandardUserInput("Username : ", &username)
-	getStandardUserInput("Password : ", &password)
-	login(username, password)
+	GetStandardUserInput("Would you like to log into your Crunchyroll account [Y/N]?", &accountStatus)
+	if accountStatus == "Y" || accountStatus == "y" {
+		loginStatus, err := login()
+		if !loginStatus || err != nil {
+			fmt.Println(">>> There was an issue while attempting to log in : ", err)
+		}
+	}
 
 	for {
 		// First we as the user for what show they would like to rip
-		getStandardUserInput("Enter a show name : ", &showSearchTerm)
+		GetStandardUserInput("Enter a show name : ", &showSearchTerm)
 
 		// First we get the showname/path of the show we would like to download
 		show, err := searchShowPath(showSearchTerm)
@@ -61,24 +58,10 @@ func main() {
 		}
 
 		// Gets the users desired settings
-		getStandardUserInput("\nEnter the seasons you wish to download : ", &showdesiredSeasons)
-		getStandardUserInput("\nEnter a subtitle language ('NONE' for no subs) : ", &showDesiredLanguage)
-		getStandardUserInput("\nEnter your desired video quality : ", &showDesiredQuality)
+		GetStandardUserInput("\nEnter the seasons you wish to download : ", &showdesiredSeasons)
+		GetStandardUserInput("\nEnter a subtitle language ('NONE' for no subs) : ", &showDesiredLanguage)
+		GetStandardUserInput("\nEnter your desired video quality : ", &showDesiredQuality)
 
 		//TODO RTMP Dumps each episode in a seperate goroutine...
 	}
-}
-
-// Gets user input from the user and unmarshalls it into the input
-func getStandardUserInput(prefixText string, input *string) error {
-	fmt.Printf(prefixText)
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		*input = scanner.Text()
-		break
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-	return nil
 }

@@ -8,20 +8,36 @@ import (
 )
 
 var (
-	showSearchTerm = ""
-	hostURL        = "http://www.crunchyroll.com"
-	searchURL      = hostURL + "/search?from=&q="
+	showSearchTerm      = ""
+	showdesiredSeasons  = ""
+	showDesiredQuality  = ""
+	showDesiredLanguage = ""
+	hostURL             = "http://www.crunchyroll.com"
+	searchURL           = hostURL + "/search?from=&q="
 )
 
 func main() {
+	// Displays the usual title banner for the application
+	fmt.Println("\n-------------------------------------------------------------------------")
+	fmt.Println("----------------======== CrunchyRip v0.1 by Viz_ ========----------------")
+	fmt.Println("-------------------------------------------------------------------------\n")
+
+	//TODO Form a VPN connection and output the IP address what will be used for the connection
+
+	// Asks if the user has an account and if they would login to get premium content
+	accountStatus := ""
+	getStandardUserInput("Do you have a CrunchyRoll Premium account [Y/N]?", &accountStatus)
+
+	username := ""
+	password := ""
+	fmt.Println("First, Please login to your CrunchyRoll account in order to access your Premium content.\n")
+	getStandardUserInput("Username : ", &username)
+	getStandardUserInput("Password : ", &password)
+	login(username, password)
+
 	for {
-		//TODO Form a VPN connection and output the IP address what will be used for the connection
-
-		//TODO Request the users login credentials and build a cookie for required auth requests
-
 		// First we as the user for what show they would like to rip
-		fmt.Println("\n")
-		getStandardUserInput("Please enter a show name : ", &showSearchTerm)
+		getStandardUserInput("Enter a show name : ", &showSearchTerm)
 
 		// First we get the showname/path of the show we would like to download
 		show, err := searchShowPath(showSearchTerm)
@@ -39,10 +55,15 @@ func main() {
 		}
 
 		// Attempts to access and print the titles of all seasons recieved
-		fmt.Println("\nBelow is a list of all seasons found ...\n")
+		fmt.Println("Below is a list of seasons found ...\n")
 		for i := 0; i < len(show.Seasons); i++ {
-			fmt.Println("\tSeason " + strconv.Itoa(show.Seasons[i].Number) + " - " + show.Seasons[i].Title + " (" + strconv.Itoa(len(show.Seasons[i].Episodes)) + " Episodes)")
+			fmt.Println("\tSeason " + strconv.Itoa(show.Seasons[i].Number) + " - " + show.Seasons[i].Title + " (" + strconv.Itoa(show.Seasons[i].Length) + " Episodes)")
 		}
+
+		// Gets the users desired settings
+		getStandardUserInput("\nEnter the seasons you wish to download : ", &showdesiredSeasons)
+		getStandardUserInput("\nEnter a subtitle language ('NONE' for no subs) : ", &showDesiredLanguage)
+		getStandardUserInput("\nEnter your desired video quality : ", &showDesiredQuality)
 
 		//TODO RTMP Dumps each episode in a seperate goroutine...
 	}

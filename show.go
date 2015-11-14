@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -24,6 +23,7 @@ type Season struct {
 }
 
 type Episode struct {
+	ID          int
 	Title       string
 	Description string
 	Number      float64
@@ -91,7 +91,6 @@ func getEpisodes(show Show) (Show, error) {
 		seasonList.Find("li.season").Each(func(i2 int, episodeList *goquery.Selection) {
 			// Adds a new season to the show containing all information
 			seasonTitle, _ := episodeList.Find("a").First().Attr("title")
-			log.Println(seasonTitle)
 			show.Seasons = append(show.Seasons, Season{
 				// Adds the title minus any "Episode XX" for shows that only have one season
 				Title: strings.SplitN(seasonTitle, " Episode ", 2)[0],
@@ -102,7 +101,9 @@ func getEpisodes(show Show) (Show, error) {
 				episodeDescription := strings.TrimSpace(episode.Find("p.short-desc").First().Text())
 				episodeNumber, _ := strconv.ParseFloat(strings.Replace(episodeTitle, "Episode ", "", 1), 64)
 				episodeURL, _ := episode.Find("a").First().Attr("href")
+				episodeID, _ := strconv.Atoi(episodeURL[len(episodeURL)-6:])
 				show.Seasons[i2].Episodes = append(show.Seasons[i2].Episodes, Episode{
+					ID:          episodeID,
 					Title:       episodeTitle,
 					Description: episodeDescription,
 					Number:      episodeNumber,
@@ -139,6 +140,6 @@ func getEpisodes(show Show) (Show, error) {
 	// TODO Filter out episodes that aren't yet released (ex One Piece)
 
 	// Prints and returns the array of episodes that we we're able to get
-	fmt.Println("Recieved a total of " + strconv.Itoa(len(show.Seasons)) + " seasons...")
+	fmt.Println("Discovered a total of " + strconv.Itoa(len(show.Seasons)) + " seasons...")
 	return show, nil
 }

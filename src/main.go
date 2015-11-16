@@ -1,4 +1,6 @@
-package main
+//go:generate goversioninfo -icon=icon.ico
+
+package crunchyrip
 
 import (
 	"fmt"

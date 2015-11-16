@@ -29,6 +29,7 @@ type Episode struct {
 	Number      float64
 	Path        string
 	URL         string
+	Subtitle    Subtitle
 }
 
 // Takes the passed show name and es crunchyroll,

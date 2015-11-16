@@ -1,45 +1,33 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
 
-// Parses the xml and returns what we need from the xml
-func getEpisodeStreams(req string, episode Episode, cookies []*http.Cookie) (string, string, error) {
-	// First gets the XML of the episode
-	xmlString, err := getEpisodeXML(req, episode, cookies)
-	if err != nil {
-		return "", "", err
+// Gets user input from the user and unmarshalls it into the input
+func GetStandardUserInput(prefixText string, input *string) error {
+	fmt.Printf(prefixText)
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		*input = scanner.Text()
+		break
 	}
-
-	// Next performs some really basic parsing of the host url
-	xmlHostURL := ""
-	if strings.Contains(xmlString, "<host>") && strings.Contains(xmlString, "</host>") {
-		xmlHostURL = strings.SplitN(strings.SplitN(xmlString, "<host>", 2)[1], "</host>", 2)[0]
-	} else {
-		fmt.Println(">> No hosts was found for the episode")
-		return "", "", nil
+	if err := scanner.Err(); err != nil {
+		return err
 	}
-
-	// Parses the URL in order to break out the two urls required for dumping
-	url, err := url.Parse(xmlHostURL)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Finds the urls with our URL object and returns them
-	urlOne := url.Scheme + "://" + url.Host + url.Path
-	urlTwo := strings.Trim(url.RequestURI(), "/")
-	return urlOne, urlTwo, nil
+	return nil
 }
 
-func getEpisodeXML(req string, episode Episode, cookies []*http.Cookie) (string, error) {
+// Gets XML data for the requested request type and episode
+func getXML(req string, episode Episode, cookies []*http.Cookie) (string, error) {
 	xmlUrl := "http://www.crunchyroll.com/xml/?"
 
 	// formdata to indicate the source page
@@ -52,7 +40,7 @@ func getEpisodeXML(req string, episode Episode, cookies []*http.Cookie) (string,
 	if req == "RpcApiSubtitle_GetXml" {
 		queryString = url.Values{
 			"req":                {"RpcApiSubtitle_GetXml"},
-			"subtitle_script_id": {strconv.Itoa(episode.ID)},
+			"subtitle_script_id": {strconv.Itoa(episode.Subtitle.ID)},
 		}
 	} else if req == "RpcApiVideoPlayer_GetStandardConfig" {
 		queryString = url.Values{
@@ -96,4 +84,14 @@ func getEpisodeXML(req string, episode Episode, cookies []*http.Cookie) (string,
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	return string(body), nil
+}
+
+// Cleans up the given filename so it can be written without any issues
+func cleanFileName(fileName string) string {
+	illegalCharacters := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+	newFileName := fileName
+	for _, illegalChar := range illegalCharacters {
+		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
+	}
+	return newFileName
 }

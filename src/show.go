@@ -1,4 +1,4 @@
-package crunchyrip
+package main
 
 import (
 	"fmt"
@@ -46,7 +46,7 @@ func searchShowPath(showName string) (Show, error) {
 	// Gets the html of the search page we're looking for
 	searchDoc, err := goquery.NewDocument("http://www.crunchyroll.com/search?from=&q=" + encodedShowName)
 	if err != nil {
-		return Show{}, err
+		return Show{}, CRError{"There was an error searching for show", err}
 	}
 
 	// Searches first for the search div
@@ -57,15 +57,14 @@ func searchShowPath(showName string) (Show, error) {
 		firstEpisodeURL, _ = s.Find("a").First().Attr("href")
 	})
 	if firstSeriesTitle == "" || firstEpisodeURL == "" {
-		fmt.Println(">>> There was an issue while getting the first search result.")
-		return Show{}, nil
+		return Show{}, CRError{"There was an issue while getting the first search result", nil}
 	}
 
 	// Gets the first result from our parse search and returns the path if its not ""/store/" or "/crunchygay/"
 	firstPath := strings.Replace(firstEpisodeURL, "http://www.crunchyroll.com/", "", 1)
 	firstShowPath := strings.Split(firstPath, "/")[0]               // Gets only the first path name (ideally a show name)
 	if firstShowPath == "store" || firstShowPath == "crunchycast" { // tf is a crunchycast?
-		return Show{}, nil
+		return Show{}, CRError{"Recieved a non-show store/crunchycast result", nil}
 	}
 
 	// Packs up all assumed show information and returns it
@@ -85,7 +84,7 @@ func getEpisodes(show Show) (Show, error) {
 	// Gets the html of the show page we previously got
 	showDoc, err := goquery.NewDocument(show.URL)
 	if err != nil {
-		return Show{}, err
+		return Show{}, CRError{"There was an error while accessing the show page", err}
 	}
 
 	// Searches first for the search div

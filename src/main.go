@@ -1,12 +1,9 @@
-//go:generate goversioninfo -icon=icon.ico
-
-package crunchyrip
+package main
 
 import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -70,69 +67,34 @@ func main() {
 
 		for _, season := range show.Seasons {
 			for _, episode := range season.Episodes {
-				episodeFileName := cleanFileName(show.Title + " - " + "S" + strconv.Itoa(season.Number) + "E" + strings.Split(strconv.FormatFloat(episode.Number, 'E', -1, 64), "E")[0] + " - " + episode.Description)
-				downloadEpisode(episode, userCookies, episodeFileName)
-				downloadSubtitle(showDesiredLanguage, episode, userCookies, episodeFileName)
-				splitMergeAndClean(episodeFileName, episode)
+				episodeFileName := cleanFileName(show.Title + " - " + "S" + strconv.Itoa(season.Number) + "E" + strconv.FormatFloat(episode.Number, 'f', -1, 64) + " - " + episode.Description)
+
+				// Download episodes to file
+				err = downloadEpisode(episodeFileName, episode, userCookies)
+				if err != nil {
+					fmt.Printf(err.Error() + "\n\n")
+					continue
+				}
+
+				// Download subtitles to file
+				err = downloadSubtitle(showDesiredLanguage, episodeFileName, episode, userCookies)
+				if err != nil {
+					fmt.Printf(err.Error() + "\n\n")
+					continue
+				}
+
+				// Merge episode with subtitle and clean up temp directory
+				err = splitMergeAndClean(episodeFileName, episode)
+				if err != nil {
+					fmt.Printf(err.Error() + "\n\n")
+					continue
+				}
+				fmt.Printf("\n\n")
 			}
+			// Move episodes into Season folder
 		}
-	}
-}
+		// Move seasons into Show folder
 
-func downloadEpisode(episode Episode, userCookies []*http.Cookie, episodeFileName string) error {
-	// First attempts to get the XML attributes for the requested episode
-	episodeRTMPInfo, err := getRMTPInfo(episode, userCookies)
-	if err != nil {
-		fmt.Println(">>> There was an issue while getting XML for "+episode.Title, err)
-		return err
+		// Move show folder into output folder
 	}
-
-	// Attempts to dump the FLV of the episode to file
-	err = dumpEpisodeFLV(episodeRTMPInfo, episode.URL, episodeFileName)
-	if err != nil {
-		fmt.Println(">>> There was an issue while trying to rip the FLV for "+episode.Title, err)
-		return err
-	}
-	return nil
-}
-
-func downloadSubtitle(showDesiredLanguage string, episode Episode, userCookies []*http.Cookie, episodeFileName string) error {
-	// Populates the subtitle info for the episode
-	subtitle, err := getSubtitleInfo(showDesiredLanguage, episode, userCookies)
-	if err != nil {
-		fmt.Println(">>> There was an error while getting Subtitle for "+episode.Title+" :", err)
-		return err
-	}
-
-	// Places the new subtitle object with JUST INFO into the episode and gets the sub data
-	subtitle, err = getSubtitleData(subtitle, episode, userCookies)
-	if err != nil {
-		fmt.Println(">>> There was an error while getting subtitle XML for "+episode.Title+" :", err)
-		return err
-	}
-
-	// Dumps our final subtitle string into an ass file for merging later on
-	err = dumpSubtitleASS(subtitle, episode, episodeFileName)
-	if err != nil {
-		fmt.Println(">>> There was an error while creating subtitles for "+episode.Title+" :", err)
-		return err
-	}
-	return nil
-}
-
-func splitMergeAndClean(episodeFileName string, episode Episode) error {
-	// Splits up the FLV file so we can handle all peices with mergemkv
-	err := splitEpisodeFLV(episodeFileName)
-	if err != nil {
-		fmt.Println(">>> There was an issue while trying to split the FLV for "+episode.Title, err)
-		return err
-	}
-
-	// Merges all the files together to create a single solid MKV
-	err = mergeEpisodeMKV(episodeFileName)
-	if err != nil {
-		fmt.Println(">>> There was an issue while trying to merge the MKV for "+episode.Title, err)
-		return err
-	}
-	return nil
 }

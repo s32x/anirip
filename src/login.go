@@ -1,4 +1,4 @@
-package crunchyrip
+package main
 
 import (
 	"bytes"
@@ -60,10 +60,13 @@ func login() ([]*http.Cookie, error) {
 		crunchyCookieEncoder := gob.NewEncoder(&crunchyCookieBytes)
 		err = crunchyCookieEncoder.Encode(crunchyCookie)
 		if err != nil {
-			return nil, err
+			return nil, CRError{"There was an error encoding your cookies", err}
 		}
 
-		ioutil.WriteFile(cookiesFile, crunchyCookieBytes.Bytes(), 0644)
+		err := ioutil.WriteFile(cookiesFile, crunchyCookieBytes.Bytes(), 0644)
+		if err != nil {
+			return nil, CRError{"There was an error writing cookies to file", err}
+		}
 
 		return crunchyCookie.Cookies, nil
 	}
@@ -74,12 +77,11 @@ func login() ([]*http.Cookie, error) {
 func getStoredCookies() (string, CrunchyCookie, bool, error) {
 	// Checks if file exists - will return its contents if so
 	if _, err := os.Stat(cookiesFile); err == nil {
-
 		crunchyCookieBytes, err := ioutil.ReadFile(cookiesFile)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
 			_ = os.Remove(cookiesFile)
-			return "", CrunchyCookie{}, false, nil
+			return "", CrunchyCookie{}, false, CRError{"There was an error reading your cookies file", err}
 		}
 
 		// Creates a decoder to decode the bytes found in our cookiesFile
@@ -92,7 +94,7 @@ func getStoredCookies() (string, CrunchyCookie, bool, error) {
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
 			_ = os.Remove(cookiesFile)
-			return "", CrunchyCookie{}, false, nil
+			return "", CrunchyCookie{}, false, CRError{"There was an error decoding your cookies", err}
 		}
 		return crunchyCookie.User, crunchyCookie, true, nil
 	}
@@ -112,7 +114,7 @@ func getNewCookies(user string, pass string) (CrunchyCookie, error) {
 	// Prepare an http request to be modified
 	loginReq, err := http.NewRequest("POST", "https://www.crunchyroll.com/?a=formhandler", bytes.NewBufferString(formData.Encode()))
 	if err != nil {
-		return CrunchyCookie{User: user}, err
+		return CrunchyCookie{User: user}, CRError{"There was an error creating login request", err}
 	}
 
 	// Adds required headers to get a valid 200 response
@@ -123,7 +125,7 @@ func getNewCookies(user string, pass string) (CrunchyCookie, error) {
 	// Attempt to execute the login request
 	loginResp, err := http.DefaultTransport.RoundTrip(loginReq)
 	if err != nil {
-		return CrunchyCookie{User: user}, err
+		return CrunchyCookie{User: user}, CRError{"There was an error performing login request", err}
 	}
 
 	// Packs all our cookies into a CookieJar and returns it
@@ -136,7 +138,7 @@ func validateCookies(user string, crunchyCookie CrunchyCookie) (bool, error) {
 	client := &http.Client{}
 	verificationReq, err := http.NewRequest("GET", "http://www.crunchyroll.com/", nil)
 	if err != nil {
-		return false, err
+		return false, CRError{"There was an error creating cookie validation request", err}
 	}
 
 	// Sets the headers for our (hopefully) authenticated request
@@ -149,14 +151,14 @@ func validateCookies(user string, crunchyCookie CrunchyCookie) (bool, error) {
 	// Attempt to execute the authenticated verification request
 	validationResp, err := client.Do(verificationReq)
 	if err != nil {
-		return false, err
+		return false, CRError{"There was an error performing cookie validation request", err}
 	}
 	defer validationResp.Body.Close()
 
 	// If we see our username in the document, login was a success
 	loginDoc, err := goquery.NewDocumentFromResponse(validationResp)
 	if err != nil {
-		return false, err
+		return false, CRError{"There was an error parsing cookie validation page", err}
 	}
 	scannedUser := strings.TrimSpace(loginDoc.Find("li.username").First().Text())
 

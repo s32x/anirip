@@ -1,4 +1,4 @@
-package crunchyrip
+package main
 
 import (
 	"bufio"
@@ -12,6 +12,18 @@ import (
 	"strings"
 )
 
+type CRError struct {
+	Message string
+	Err     error
+}
+
+func (e CRError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf(">>> Error : %v : %v", e.Message, e.Err)
+	}
+	return fmt.Sprintf(">>> Error : %v.", e.Message)
+}
+
 // Gets user input from the user and unmarshalls it into the input
 func GetStandardUserInput(prefixText string, input *string) error {
 	fmt.Printf(prefixText)
@@ -21,9 +33,19 @@ func GetStandardUserInput(prefixText string, input *string) error {
 		break
 	}
 	if err := scanner.Err(); err != nil {
-		return err
+		return CRError{"There was an error getting standard user input", err}
 	}
 	return nil
+}
+
+// Cleans up the given filename so it can be written without any issues
+func cleanFileName(fileName string) string {
+	illegalCharacters := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+	newFileName := fileName
+	for _, illegalChar := range illegalCharacters {
+		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
+	}
+	return newFileName
 }
 
 // Gets XML data for the requested request type and episode
@@ -65,7 +87,10 @@ func getXML(req string, episode Episode, cookies []*http.Cookie) (string, error)
 
 	// Constructs a client and request that will get the xml we're asking for
 	client := &http.Client{}
-	xmlReq, _ := http.NewRequest("POST", xmlUrl+queryString.Encode(), bytes.NewBufferString(formData.Encode()))
+	xmlReq, err := http.NewRequest("POST", xmlUrl+queryString.Encode(), bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		return "", CRError{"There was an error creating our getXML request", err}
+	}
 	xmlReq.Header.Add("Host", "www.crunchyroll.com")
 	xmlReq.Header.Add("Origin", "http://static.ak.crunchyroll.com")
 	xmlReq.Header.Add("Content-type", "application/x-www-form-urlencoded")
@@ -79,19 +104,34 @@ func getXML(req string, episode Episode, cookies []*http.Cookie) (string, error)
 	// Executes request and returns the result as a string
 	resp, err := client.Do(xmlReq)
 	if err != nil {
-		return "", err
+		return "", CRError{"There was an error executing our getXML request", err}
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", CRError{"There was an error reading our getXML response", err}
+	}
 	return string(body), nil
 }
 
-// Cleans up the given filename so it can be written without any issues
-func cleanFileName(fileName string) string {
-	illegalCharacters := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
-	newFileName := fileName
-	for _, illegalChar := range illegalCharacters {
-		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
+// Splits up the FLV file so we can handle all peices with mergemkv
+func splitMergeAndClean(episodeFileName string, episode Episode) error {
+	err := splitEpisodeFLV(episodeFileName)
+	if err != nil {
+		return CRError{"There was an error while trying to split the FLV", err}
 	}
-	return newFileName
+
+	// Merges all the files together to create a single solid MKV
+	err = mergeEpisodeMKV(episodeFileName)
+	if err != nil {
+		return CRError{"There was an issue while trying to merge the MKV", err}
+	}
+
+	// Attempts to remove all the files we're done with
+	os.Remove("temp\\" + episodeFileName + ".ass")
+	os.Remove("temp\\" + episodeFileName + ".264")
+	os.Remove("temp\\" + episodeFileName + ".txt")
+	os.Remove("temp\\" + episodeFileName + ".aac")
+	os.Remove("temp\\" + episodeFileName + ".flv")
+	return nil
 }

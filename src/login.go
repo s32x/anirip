@@ -15,73 +15,65 @@ import (
 
 type CrunchyCookie struct {
 	User    string
+	Pass    string
 	Cookies []*http.Cookie
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func login() ([]*http.Cookie, error) {
-	user := ""
-	pass := ""
-
+func login(crunchyCookie *CrunchyCookie) error {
 	// First checks to see if we already have a cookie config
-	user, crunchyCookie, exists, err := getStoredCookies()
+	exists, err := getStoredCookies(crunchyCookie)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// If we don't already have cookies, get new ones
-	if !exists || len(crunchyCookie.Cookies) == 0 || user == "" {
+	if crunchyCookie.Cookies == nil || crunchyCookie.User == "" {
 		// Ask for credentials and request new cookies
-		fmt.Print("Please enter your username and password.\n\n")
-		GetStandardUserInput("Username : ", &user)
-		GetStandardUserInput("Password : ", &pass)
-
-		crunchyCookie, err = getNewCookies(user, pass)
+		fmt.Printf("Please enter your username and password.\n\n")
+		getStandardUserInput("Username : ", &crunchyCookie.User)
+		getStandardUserInput("Password : ", &crunchyCookie.Pass)
+		err := getNewCookies(crunchyCookie)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	// Test the cookies we currently have to be sure they are still valid
-	valid, err := validateCookies(user, crunchyCookie)
+	// Test the cookies we currently have at this point
+	valid, err := validateCookies(crunchyCookie)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if valid && exists {
-		fmt.Printf(">> Logged in as " + crunchyCookie.User + "\n\n")
-		return crunchyCookie.Cookies, nil
-	}
-
-	// If the cookies we have are currently valid,
-	// and don't already exist, store them
+	// If the cookies we have are currently valid but dont exist, store them
 	if valid && !exists {
+		// Prepares a buffer and marshals the crunchyCookie object
 		var crunchyCookieBytes bytes.Buffer
 		crunchyCookieEncoder := gob.NewEncoder(&crunchyCookieBytes)
 		err = crunchyCookieEncoder.Encode(crunchyCookie)
 		if err != nil {
-			return nil, CRError{"There was an error encoding your cookies", err}
+			return CRError{"There was an error encoding your cookies", err}
 		}
 
+		// Writes cookies to cookies file
 		err := ioutil.WriteFile(cookiesFile, crunchyCookieBytes.Bytes(), 0644)
 		if err != nil {
-			return nil, CRError{"There was an error writing cookies to file", err}
+			return CRError{"There was an error writing cookies to file", err}
 		}
-
-		return crunchyCookie.Cookies, nil
+		return nil
 	}
-	return nil, nil
+	return nil
 }
 
 // Gets stored cookies found in cookiesFile
-func getStoredCookies() (string, CrunchyCookie, bool, error) {
-	// Checks if file exists - will return its contents if so
+func getStoredCookies(crunchyCookie *CrunchyCookie) (bool, error) {
+	// Checks if file exists - will return it's contents if so
 	if _, err := os.Stat(cookiesFile); err == nil {
 		crunchyCookieBytes, err := ioutil.ReadFile(cookiesFile)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
 			_ = os.Remove(cookiesFile)
-			return "", CrunchyCookie{}, false, CRError{"There was an error reading your cookies file", err}
+			return false, CRError{"There was an error reading your cookies file", err}
 		}
 
 		// Creates a decoder to decode the bytes found in our cookiesFile
@@ -89,32 +81,32 @@ func getStoredCookies() (string, CrunchyCookie, bool, error) {
 		crunchyCookieDecoder := gob.NewDecoder(crunchyCookieBuffer)
 
 		// Decodes the stored cookie and returns it
-		var crunchyCookie CrunchyCookie
 		err = crunchyCookieDecoder.Decode(&crunchyCookie)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
 			_ = os.Remove(cookiesFile)
-			return "", CrunchyCookie{}, false, CRError{"There was an error decoding your cookies", err}
+			return false, CRError{"There was an error decoding your cookies file", err}
 		}
-		return crunchyCookie.User, crunchyCookie, true, nil
+		// Cookies are able to be decoded so return true
+		return true, nil
 	}
-	return "", CrunchyCookie{}, false, nil
+	return false, nil
 }
 
 // Creates new cookies by re-authenticating with Crunchyroll
-func getNewCookies(user string, pass string) (CrunchyCookie, error) {
+func getNewCookies(crunchyCookie *CrunchyCookie) error {
 	// Construct formdata for the login request
 	formData := url.Values{
 		"formname": {"RpcApiUser_Login"},
 		"fail_url": {"http://www.crunchyroll.com/login"},
-		"name":     {user},
-		"password": {pass},
+		"name":     {crunchyCookie.User},
+		"password": {crunchyCookie.Pass},
 	}
 
 	// Prepare an http request to be modified
 	loginReq, err := http.NewRequest("POST", "https://www.crunchyroll.com/?a=formhandler", bytes.NewBufferString(formData.Encode()))
 	if err != nil {
-		return CrunchyCookie{User: user}, CRError{"There was an error creating login request", err}
+		return CRError{"There was an error creating login request", err}
 	}
 
 	// Adds required headers to get a valid 200 response
@@ -125,15 +117,16 @@ func getNewCookies(user string, pass string) (CrunchyCookie, error) {
 	// Attempt to execute the login request
 	loginResp, err := http.DefaultTransport.RoundTrip(loginReq)
 	if err != nil {
-		return CrunchyCookie{User: user}, CRError{"There was an error performing login request", err}
+		return CRError{"There was an error performing login request", err}
 	}
 
-	// Packs all our cookies into a CookieJar and returns it
-	return CrunchyCookie{User: user, Cookies: loginResp.Cookies()}, nil
+	// Sets cookies to recieved cookies and returns
+	crunchyCookie.Cookies = loginResp.Cookies()
+	return nil
 }
 
 // Validates the cookies to be sure that we are still logged in
-func validateCookies(user string, crunchyCookie CrunchyCookie) (bool, error) {
+func validateCookies(crunchyCookie *CrunchyCookie) (bool, error) {
 	// We use the cookie we recieved to attempt a simple authenticated request
 	client := &http.Client{}
 	verificationReq, err := http.NewRequest("GET", "http://www.crunchyroll.com/", nil)
@@ -162,7 +155,9 @@ func validateCookies(user string, crunchyCookie CrunchyCookie) (bool, error) {
 	}
 	scannedUser := strings.TrimSpace(loginDoc.Find("li.username").First().Text())
 
-	if strings.ToLower(scannedUser) == strings.ToLower(user) {
+	// Checks if the Username used to login is in the home page...
+	if strings.ToLower(scannedUser) == strings.ToLower(crunchyCookie.User) {
+		fmt.Printf(">> Logged in as " + crunchyCookie.User + "\n\n")
 		return true, nil
 	}
 	return false, nil

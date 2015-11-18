@@ -12,7 +12,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -96,9 +95,9 @@ type Event struct {
 }
 
 // Entirely downloads subtitles to our temp directory
-func downloadSubtitle(showDesiredLanguage string, episodeFileName string, episode Episode, userCookies []*http.Cookie) error {
+func downloadSubtitle(episodeFileName string, episode Episode, params SessionParameters) error {
 	// Populates the subtitle info for the episode
-	subtitle, err := getSubtitleInfo(showDesiredLanguage, episode, userCookies)
+	subtitle, err := getSubtitleInfo(episode, params)
 	if err != nil {
 		return err
 	}
@@ -109,7 +108,7 @@ func downloadSubtitle(showDesiredLanguage string, episodeFileName string, episod
 	}
 
 	// Places the new subtitle object with JUST INFO into the episode and gets the sub data
-	subtitle, err = getSubtitleData(subtitle, episode, userCookies)
+	subtitle, err = getSubtitleData(subtitle, episode, params)
 	if err != nil {
 		return err
 	}
@@ -122,9 +121,9 @@ func downloadSubtitle(showDesiredLanguage string, episodeFileName string, episod
 	return nil
 }
 
-func getSubtitleInfo(language string, episode Episode, cookies []*http.Cookie) (Subtitle, error) {
+func getSubtitleInfo(episode Episode, params SessionParameters) (Subtitle, error) {
 	// First gets the XML of the episode subtitle
-	xmlString, err := getXML("RpcApiSubtitle_GetListing", episode, cookies)
+	xmlString, err := getXML("RpcApiSubtitle_GetListing", episode, params)
 	if err != nil {
 		return Subtitle{}, err
 	}
@@ -143,7 +142,7 @@ func getSubtitleInfo(language string, episode Episode, cookies []*http.Cookie) (
 
 	// Finds the subtitle ID of the language we want
 	for i := 0; i < len(subListResults.Subtitles); i++ {
-		if strings.Contains(subListResults.Subtitles[i].Title, language) {
+		if strings.Contains(subListResults.Subtitles[i].Title, params.DesiredLanguage) {
 			return subListResults.Subtitles[i], nil
 		}
 	}
@@ -157,10 +156,10 @@ func getSubtitleInfo(language string, episode Episode, cookies []*http.Cookie) (
 	return Subtitle{}, CRError{"Unable to find any subtitles we were looking for", nil}
 }
 
-func getSubtitleData(subtitle Subtitle, episode Episode, cookies []*http.Cookie) (Subtitle, error) {
+func getSubtitleData(subtitle Subtitle, episode Episode, params SessionParameters) (Subtitle, error) {
 	// Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
 	episode.Subtitle = subtitle
-	xmlString, err := getXML("RpcApiSubtitle_GetXml", episode, cookies)
+	xmlString, err := getXML("RpcApiSubtitle_GetXml", episode, params)
 	if err != nil {
 		return subtitle, err
 	}

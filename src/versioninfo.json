@@ -3,13 +3,13 @@
 	{
 		"FileVersion": {
 			"Major": 0,
-			"Minor": 1,
+			"Minor": 2,
 			"Patch": 0,
 			"Build": 1
 		},
 		"ProductVersion": {
 			"Major": 0,
-			"Minor": 1,
+			"Minor": 2,
 			"Patch": 0,
 			"Build": 1
 		},
@@ -31,7 +31,7 @@
 		"OriginalFilename": "",
 		"PrivateBuild": "",
 		"ProductName": "CrunchyRip",
-		"ProductVersion": "0.1",
+		"ProductVersion": "0.2",
 		"SpecialBuild": ""
 	},
 	"VarFileInfo":

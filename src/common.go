@@ -12,6 +12,16 @@ import (
 	"strings"
 )
 
+type SessionParameters struct {
+	AccountStatus   string
+	SearchTerm      string
+	DesiredSeasons  string
+	DesiredEpisodes string
+	DesiredQuality  string
+	DesiredLanguage string
+	Cookies         CrunchyCookie
+}
+
 type CRError struct {
 	Message string
 	Err     error
@@ -25,7 +35,7 @@ func (e CRError) Error() string {
 }
 
 // Gets user input from the user and unmarshalls it into the input
-func GetStandardUserInput(prefixText string, input *string) error {
+func getStandardUserInput(prefixText string, input *string) error {
 	fmt.Printf(prefixText)
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -36,6 +46,10 @@ func GetStandardUserInput(prefixText string, input *string) error {
 		return CRError{"There was an error getting standard user input", err}
 	}
 	return nil
+}
+
+func getEpisodeFileName(showTitle string, seasonNumber string, episodeNumber string, episodeDesc string) string {
+	return cleanFileName(showTitle + " - S0" + seasonNumber + "E0" + episodeNumber + " - " + episodeDesc)
 }
 
 // Cleans up the given filename so it can be written without any issues
@@ -49,7 +63,7 @@ func cleanFileName(fileName string) string {
 }
 
 // Gets XML data for the requested request type and episode
-func getXML(req string, episode Episode, cookies []*http.Cookie) (string, error) {
+func getXML(req string, episode Episode, params SessionParameters) (string, error) {
 	xmlUrl := "http://www.crunchyroll.com/xml/?"
 
 	// formdata to indicate the source page
@@ -97,8 +111,8 @@ func getXML(req string, episode Episode, cookies []*http.Cookie) (string, error)
 	xmlReq.Header.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
 	xmlReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
 	xmlReq.Header.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
-	for i := 0; i < len(cookies); i++ {
-		xmlReq.AddCookie(cookies[i])
+	for i := 0; i < len(params.Cookies.Cookies); i++ {
+		xmlReq.AddCookie(params.Cookies.Cookies[i])
 	}
 
 	// Executes request and returns the result as a string

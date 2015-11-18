@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"os/exec"
 	"strings"
@@ -15,15 +14,15 @@ type RTMPInfo struct {
 }
 
 // Downloads entire FLV episodes to our temp directory
-func downloadEpisode(episodeFileName string, episode Episode, userCookies []*http.Cookie) error {
+func downloadEpisode(episodeFileName string, episode Episode, params SessionParameters) error {
 	// First attempts to get the XML attributes for the requested episode
-	episodeRTMPInfo, err := getRMTPInfo(episode, userCookies)
+	episodeRTMPInfo, err := getRMTPInfo(episode, params)
 	if err != nil {
 		return err
 	}
 
 	// Attempts to dump the FLV of the episode to file
-	err = dumpEpisodeFLV(episodeRTMPInfo, episode, episodeFileName, userCookies)
+	err = dumpEpisodeFLV(episodeRTMPInfo, episode, episodeFileName, params)
 	if err != nil {
 		return err
 	}
@@ -31,9 +30,9 @@ func downloadEpisode(episodeFileName string, episode Episode, userCookies []*htt
 }
 
 // Parses the xml and returns what we need from the xml
-func getRMTPInfo(episode Episode, cookies []*http.Cookie) (RTMPInfo, error) {
+func getRMTPInfo(episode Episode, params SessionParameters) (RTMPInfo, error) {
 	// First gets the XML of the episode video
-	xmlString, err := getXML("RpcApiVideoPlayer_GetStandardConfig", episode, cookies)
+	xmlString, err := getXML("RpcApiVideoPlayer_GetStandardConfig", episode, params)
 	if err != nil {
 		return RTMPInfo{}, err
 	}
@@ -76,7 +75,7 @@ func getRMTPInfo(episode Episode, cookies []*http.Cookie) (RTMPInfo, error) {
 }
 
 // Calls rtmpdump.exe to dump the episode and names it
-func dumpEpisodeFLV(rtmp RTMPInfo, episode Episode, fileName string, cookies []*http.Cookie) error {
+func dumpEpisodeFLV(rtmp RTMPInfo, episode Episode, fileName string, params SessionParameters) error {
 	// Gets the path of our rtmp dump exe
 	path, err := exec.LookPath("engine\\rtmpdump.exe")
 	if err != nil {
@@ -110,7 +109,7 @@ func dumpEpisodeFLV(rtmp RTMPInfo, episode Episode, fileName string, cookies []*
 	if err != nil {
 		fmt.Printf("There was an error while downloading... Resuming...\n")
 		// Recursively recalls downloadEpisode if we get an unfinished download
-		downloadEpisode(fileName, episode, userCookies)
+		downloadEpisode(fileName, episode, params)
 	}
 	fmt.Printf("Downloaded " + fileName + ".flv successfully!\n")
 	return nil
@@ -148,7 +147,13 @@ func mergeEpisodeMKV(fileName string) error {
 	}
 
 	// Creates the command which we will use to split our flv
-	cmd := exec.Command(path, "-o", "temp\\"+fileName+".mkv", "temp\\"+fileName+".ass", "temp\\"+fileName+".264", "--aac-is-sbr", "0", "temp\\"+fileName+".aac")
+	cmd := exec.Command(path,
+		"-o", "temp\\"+fileName+".mkv",
+		"--language", "0:eng",
+		"temp\\"+fileName+".ass",
+		"temp\\"+fileName+".264",
+		"--aac-is-sbr", "0",
+		"temp\\"+fileName+".aac")
 
 	// Executes the extraction and waits for a response
 	err = cmd.Start()

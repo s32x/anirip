@@ -20,7 +20,7 @@ type CrunchyCookie struct {
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func login(crunchyCookie *CrunchyCookie) error {
+func authenticate(crunchyCookie *CrunchyCookie) error {
 	// First checks to see if we already have a cookie config
 	exists, err := getStoredCookies(crunchyCookie)
 	if err != nil {
@@ -33,7 +33,7 @@ func login(crunchyCookie *CrunchyCookie) error {
 		fmt.Printf("Please enter your username and password.\n\n")
 		getStandardUserInput("Username : ", &crunchyCookie.User)
 		getStandardUserInput("Password : ", &crunchyCookie.Pass)
-		err := getNewCookies(crunchyCookie)
+		err := createNewCookies(crunchyCookie)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func getStoredCookies(crunchyCookie *CrunchyCookie) (bool, error) {
 }
 
 // Creates new cookies by re-authenticating with Crunchyroll
-func getNewCookies(crunchyCookie *CrunchyCookie) error {
+func createNewCookies(crunchyCookie *CrunchyCookie) error {
 	// Construct formdata for the login request
 	formData := url.Values{
 		"formname": {"RpcApiUser_Login"},
@@ -137,8 +137,8 @@ func validateCookies(crunchyCookie *CrunchyCookie) (bool, error) {
 	// Sets the headers for our (hopefully) authenticated request
 	verificationReq.Header.Add("User-Agent", userAgent)
 	verificationReq.Header.Add("Connection", "keep-alive")
-	for i := 0; i < len(crunchyCookie.Cookies); i++ {
-		verificationReq.AddCookie(crunchyCookie.Cookies[i])
+	for _, cookie := range crunchyCookie.Cookies {
+		verificationReq.AddCookie(cookie)
 	}
 
 	// Attempt to execute the authenticated verification request

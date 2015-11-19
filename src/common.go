@@ -13,13 +13,17 @@ import (
 )
 
 type SessionParameters struct {
-	AccountStatus   string
-	SearchTerm      string
+	AccountStatus string
+	Show          Show
+	Cookies       CrunchyCookie
+	Preferences   Preferences
+}
+
+type Preferences struct {
 	DesiredSeasons  string
 	DesiredEpisodes string
 	DesiredQuality  string
 	DesiredLanguage string
-	Cookies         CrunchyCookie
 }
 
 type CRError struct {
@@ -34,36 +38,8 @@ func (e CRError) Error() string {
 	return fmt.Sprintf(">>> Error : %v.", e.Message)
 }
 
-// Gets user input from the user and unmarshalls it into the input
-func getStandardUserInput(prefixText string, input *string) error {
-	fmt.Printf(prefixText)
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		*input = scanner.Text()
-		break
-	}
-	if err := scanner.Err(); err != nil {
-		return CRError{"There was an error getting standard user input", err}
-	}
-	return nil
-}
-
-func getEpisodeFileName(showTitle string, seasonNumber string, episodeNumber string, episodeDesc string) string {
-	return cleanFileName(showTitle + " - S0" + seasonNumber + "E0" + episodeNumber + " - " + episodeDesc)
-}
-
-// Cleans up the given filename so it can be written without any issues
-func cleanFileName(fileName string) string {
-	illegalCharacters := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
-	newFileName := fileName
-	for _, illegalChar := range illegalCharacters {
-		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
-	}
-	return newFileName
-}
-
 // Gets XML data for the requested request type and episode
-func getXML(req string, episode Episode, params SessionParameters) (string, error) {
+func getXML(req string, episode *Episode, params *SessionParameters) (string, error) {
 	xmlUrl := "http://www.crunchyroll.com/xml/?"
 
 	// formdata to indicate the source page
@@ -128,24 +104,27 @@ func getXML(req string, episode Episode, params SessionParameters) (string, erro
 	return string(body), nil
 }
 
-// Splits up the FLV file so we can handle all peices with mergemkv
-func splitMergeAndClean(episodeFileName string, episode Episode) error {
-	err := splitEpisodeFLV(episodeFileName)
-	if err != nil {
-		return CRError{"There was an error while trying to split the FLV", err}
+// Gets user input from the user and unmarshalls it into the input
+func getStandardUserInput(prefixText string, input *string) error {
+	fmt.Printf(prefixText)
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		*input = scanner.Text()
+		break
 	}
-
-	// Merges all the files together to create a single solid MKV
-	err = mergeEpisodeMKV(episodeFileName)
-	if err != nil {
-		return CRError{"There was an issue while trying to merge the MKV", err}
+	if err := scanner.Err(); err != nil {
+		return CRError{"There was an error getting standard user input", err}
 	}
+	return nil
+}
 
-	// Attempts to remove all the files we're done with
-	os.Remove("temp\\" + episodeFileName + ".ass")
-	os.Remove("temp\\" + episodeFileName + ".264")
-	os.Remove("temp\\" + episodeFileName + ".txt")
-	os.Remove("temp\\" + episodeFileName + ".aac")
-	os.Remove("temp\\" + episodeFileName + ".flv")
+// Cleans up the given filename so it can be written without any issues
+func setEpisodeFileName(showTitle string, seasonNumber int, episode *Episode) error {
+	illegalCharacters := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+	newFileName := showTitle + " - S0" + strconv.Itoa(seasonNumber) + "E0" + strconv.FormatFloat(episode.Number, 'f', -1, 64) + " - " + episode.Description
+	for _, illegalChar := range illegalCharacters {
+		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
+	}
+	episode.FileName = newFileName
 	return nil
 }

@@ -7,19 +7,25 @@ func main() {
 	_ = session.Login("", "")
 
 	show := new(Show)
-	show.FindShow("sword art")
+	show.FindShow("the world is still beautiful")
 	show.GetEpisodes()
+	// Creates new show folder
 	for _, season := range show.Seasons {
+		// Creates new season folder
 		for _, episode := range season.Episodes {
-			fmt.Printf("Downloading episode - " + episode.FileName + "\n")
+			fmt.Printf(episode.FileName + "\n")
+			fmt.Printf("Downloading video...\n")
 			episode.DownloadEpisode("1080p", session.Cookies)
 			fmt.Printf("Downloading subtitles...\n")
 			episode.DownloadSubtitles("English", session.Cookies)
 			fmt.Printf("Splitting video...\n")
-			episode.Split()
+			Split(episode.FileName)
 			fmt.Printf("Merging video...\n")
-			episode.Merge()
+			Merge(episode.FileName)
+			fmt.Printf("Cleaning video...\n")
+			Clean(episode.FileName)
 			fmt.Printf("Downloading and merging completed successfully.\n\n")
+			// Moves show
 		}
 	}
 }

@@ -49,6 +49,7 @@ func (session *Session) Login(user string, pass string) error {
 		// Prepares a buffer and marshals the session object
 		var sessionBytes bytes.Buffer
 		sessionEncoder := gob.NewEncoder(&sessionBytes)
+		session.Pass = "" // Clears the password before writing it to our cookie file
 		err = sessionEncoder.Encode(session)
 		if err != nil {
 			return Error{"There was an error encoding your cookies", err}
@@ -156,7 +157,7 @@ func validateCookies(session *Session) (bool, error) {
 
 	// Checks if the Username used to login is in the home page...
 	if strings.ToLower(scannedUser) == strings.ToLower(session.User) {
-		fmt.Println("Logged in as " + session.User)
+		fmt.Println("Logged in to Crunchyroll as " + session.User)
 		return true, nil
 	}
 	return false, nil

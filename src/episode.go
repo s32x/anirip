@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -29,73 +27,6 @@ func (episode *Episode) DownloadEpisode(quality string, cookies []*http.Cookie) 
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// Splits the episode into multiple media files that we will later merge together
-func (episode *Episode) Split() error {
-	// TODO check if file exists before attempting extraction
-	path, err := exec.LookPath("engine\\flvextract.exe")
-	if err != nil {
-		return Error{"Unable to find flvextract.exe in \\engine\\ directory", err}
-	}
-
-	// Creates the command which we will use to split our flv
-	cmd := exec.Command(path, "-v", "-a", "-t", "-o", "temp\\"+episode.FileName+".flv")
-
-	// Executes the extraction and waits for a response
-	err = cmd.Start()
-	if err != nil {
-		return Error{"There was an error while executing our extracter", err}
-	}
-	fmt.Printf("Attempting to split " + episode.FileName + ".flv...\n")
-	err = cmd.Wait()
-	if err != nil {
-		return Error{"There was an error while extracting", err}
-	}
-	fmt.Printf("Split " + episode.FileName + ".flv successfully!\n")
-	return nil
-}
-
-// Merges all media files including subs
-func (episode *Episode) Merge() error {
-	// TODO check if files exist before attempting final merge
-	path, err := exec.LookPath("engine\\mkvmerge.exe")
-	if err != nil {
-		return Error{"Unable to find mkvmerge.exe in \\engine\\ directory", err}
-	}
-
-	// Creates the command which we will use to split our flv
-	cmd := exec.Command(path,
-		"-o", "temp\\"+episode.FileName+".mkv",
-		"--language", "0:eng",
-		"temp\\"+episode.FileName+".ass",
-		"temp\\"+episode.FileName+".264",
-		"--aac-is-sbr", "0",
-		"temp\\"+episode.FileName+".aac")
-
-	// Executes the extraction and waits for a response
-	err = cmd.Start()
-	if err != nil {
-		return Error{"There was an error while executing our merge", err}
-	}
-
-	// Waits for the merge to complete
-	err = cmd.Wait()
-	if err != nil {
-		return Error{"There was an error while merging", err}
-	}
-
-	// Finally checks to be sure our mkv exists and clears out old files
-	_, err = exec.LookPath("temp\\" + episode.FileName + ".mkv")
-	if err != nil {
-		return Error{"MKV was not found after merge", err}
-	}
-	os.Remove("temp\\" + episode.FileName + ".ass")
-	os.Remove("temp\\" + episode.FileName + ".264")
-	os.Remove("temp\\" + episode.FileName + ".txt")
-	os.Remove("temp\\" + episode.FileName + ".aac")
-	os.Remove("temp\\" + episode.FileName + ".flv")
 	return nil
 }
 

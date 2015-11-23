@@ -8,10 +8,10 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -95,55 +95,57 @@ type Event struct {
 }
 
 // Entirely downloads subtitles to our temp directory
-func downloadSubtitle(episode *Episode, params *SessionParameters) error {
+func (episode *Episode) DownloadSubtitles(language string, cookies []*http.Cookie) error {
 	// Populates the subtitle info for the episode
-	err := getSubtitleInfo(episode, params)
+	subtitles := new(Subtitle)
+	err := episode.getSubtitleInfo(subtitles, language, cookies)
 	if err != nil {
 		return err
 	}
 
 	// If we get back a subtitle that was nil (no ID), there are no subs available
-	if episode.Subtitle.ID == 0 {
+	if episode.SubtitleID == 0 {
 		return nil
 	}
 
 	// Places the new subtitle object with JUST INFO into the episode and gets the sub data
-	err = getSubtitleData(episode, params)
+	err = episode.getSubtitleData(subtitles, cookies)
 	if err != nil {
 		return err
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	err = dumpSubtitleASS(episode)
+	err = episode.dumpSubtitleASS(subtitles)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getSubtitleInfo(episode *Episode, params *SessionParameters) error {
+func (episode *Episode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) error {
 	// First gets the XML of the episode subtitle
-	xmlString, err := getXML("RpcApiSubtitle_GetListing", episode, params)
+	xmlString, err := getXML("RpcApiSubtitle_GetListing", episode, cookies)
 	if err != nil {
 		return err
 	}
 
 	// Return if we see that the show has embedded/hardcoded subtitles
 	if strings.Contains("<media_id>None</media_id>", xmlString) {
-		return CRError{"This episode has embedded subtitles", nil}
+		return Error{"This episode has embedded subtitles", nil}
 	}
 
 	// Parses the xml into our results object
 	subListResults := SubListResults{}
 	err = xml.Unmarshal([]byte(xmlString), &subListResults)
 	if err != nil {
-		return CRError{"There was an error while reading subtitle information", nil}
+		return Error{"There was an error while reading subtitle information", nil}
 	}
 
 	// Finds the subtitle ID of the language we want
 	for i := 0; i < len(subListResults.Subtitles); i++ {
-		if strings.Contains(subListResults.Subtitles[i].Title, params.Preferences.DesiredLanguage) {
-			episode.Subtitle = subListResults.Subtitles[i]
+		if strings.Contains(subListResults.Subtitles[i].Title, language) {
+			subtitles = &subListResults.Subtitles[i]
+			episode.SubtitleID = subtitles.ID
 			return nil
 		}
 	}
@@ -151,33 +153,31 @@ func getSubtitleInfo(episode *Episode, params *SessionParameters) error {
 	// If we cant find the requested language default to English
 	for i := 0; i < len(subListResults.Subtitles); i++ {
 		if strings.Contains(subListResults.Subtitles[i].Title, "English") {
-			episode.Subtitle = subListResults.Subtitles[i]
+			subtitles = &subListResults.Subtitles[i]
+			episode.SubtitleID = subtitles.ID
 		}
 	}
-	return CRError{"Unable to find any subtitles we were looking for", nil}
+	return Error{"Unable to find any subtitles we were looking for", nil}
 }
 
-func getSubtitleData(episode *Episode, params *SessionParameters) error {
+func (episode *Episode) getSubtitleData(subtitles *Subtitle, cookies []*http.Cookie) error {
 	// Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
-	xmlString, err := getXML("RpcApiSubtitle_GetXml", episode, params)
+	xmlString, err := getXML("RpcApiSubtitle_GetXml", episode, cookies)
 	if err != nil {
 		return err
 	}
 
 	// Parses the xml into our results object
-	err = xml.Unmarshal([]byte(xmlString), &episode.Subtitle)
+	err = xml.Unmarshal([]byte(xmlString), &subtitles)
 	if err != nil {
-		fmt.Println(">>> There was an error while reading subtitle information : ", err)
-		return CRError{"There was an error reading xml", err}
+		return Error{"There was an error reading xml", err}
 	}
 	return nil
 }
 
-func dumpSubtitleASS(episode *Episode) error {
-	fmt.Printf("Attempting to decrypt subtitles for - " + episode.Description + "\n")
-
+func (episode *Episode) dumpSubtitleASS(subtitles *Subtitle) error {
 	// Attempts to decrypt the compressed subtitles we recieved
-	decryptedSubtitles, err := decodeSubtitles(episode.Subtitle)
+	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {
 		return err
 	}
@@ -191,28 +191,27 @@ func dumpSubtitleASS(episode *Episode) error {
 	// Writes the ASS subtitles to a file in our temp folder
 	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", []byte(formattedSubtitles), 0644)
 	if err != nil {
-		return CRError{"There was an error while writing the subtitles to file", err}
+		return Error{"There was an error while writing the subtitles to file", err}
 	}
-	fmt.Printf("Subtitles successfully decrypted for - " + episode.Description + "\n")
 	return nil
 }
 
-func decodeSubtitles(subtitle Subtitle) (string, error) {
+func decryptSubtitles(subtitle *Subtitle) (string, error) {
 	// Generates the key that will be used to decrypt our subtitles
 	key := generateKey(subtitle.ID)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", CRError{"There was an error while creating a key cipher block", err}
+		return "", Error{"There was an error while creating a key cipher block", err}
 	}
 
 	// Gets the bytes of both our iv and subtitle data
 	iv, err := base64.StdEncoding.DecodeString(subtitle.Iv)
 	if err != nil {
-		return "", CRError{"There was an error while decoding our subtitle iv", err}
+		return "", Error{"There was an error while decoding our subtitle iv", err}
 	}
 	data, err := base64.StdEncoding.DecodeString(subtitle.Data)
 	if err != nil {
-		return "", CRError{"There was an error while decoding our subtitle data", err}
+		return "", Error{"There was an error while decoding our subtitle data", err}
 	}
 
 	// Decrypts our subtitles back into our data byte array
@@ -224,12 +223,12 @@ func decodeSubtitles(subtitle Subtitle) (string, error) {
 	var subOutput bytes.Buffer
 	zlibReader, err := zlib.NewReader(reader)
 	if err != nil {
-		return "", CRError{"There was an error while creating a new zlib reader", err}
+		return "", Error{"There was an error while creating a new zlib reader", err}
 	}
 	io.Copy(&subOutput, zlibReader)
 	zlibReader.Close()
 
-	// Returns the string output of the reader
+	// Returns the string output of the reader (subtitles string)
 	return subOutput.String(), nil
 }
 
@@ -238,7 +237,7 @@ func formatSubtitles(subString string) (string, error) {
 	// Parses the xml into our results object
 	err := xml.Unmarshal([]byte(subString), &subScript)
 	if err != nil {
-		return "", CRError{"There was an error while parsing the XML subtitles", err}
+		return "", Error{"There was an error while parsing the XML subtitles", err}
 	}
 
 	// Discarding language for now in order to set to default playback subtitle (subScript.Title)

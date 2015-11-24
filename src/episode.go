@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -17,7 +20,7 @@ type RTMPInfo struct {
 func (episode *Episode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
 	// First attempts to get the XML attributes for the requested episode
 	rtmpInfo := new(RTMPInfo)
-	err := episode.getEpisodeRTMPInfo(rtmpInfo, cookies)
+	err := episode.getEpisodeRTMPInfo(quality, rtmpInfo, cookies)
 	if err != nil {
 		return err
 	}
@@ -31,8 +34,9 @@ func (episode *Episode) DownloadEpisode(quality string, cookies []*http.Cookie) 
 }
 
 // Parses the xml and returns what we need from the xml
-func (episode *Episode) getEpisodeRTMPInfo(rtmpInfo *RTMPInfo, cookies []*http.Cookie) error {
+func (episode *Episode) getEpisodeRTMPInfo(quality string, rtmpInfo *RTMPInfo, cookies []*http.Cookie) error {
 	// First gets the XML of the episode video
+	episode.Quality = quality // Sets the quality to the passed quality string
 	xmlString, err := getXML("RpcApiVideoPlayer_GetStandardConfig", episode, cookies)
 	if err != nil {
 		return err
@@ -112,4 +116,110 @@ func (episode *Episode) dumpEpisodeFLV(rtmpInfo *RTMPInfo) error {
 		episode.dumpEpisodeFLV(rtmpInfo)
 	}
 	return nil
+}
+
+// Gets XML data for the requested request type and episode
+func getXML(req string, episode *Episode, cookies []*http.Cookie) (string, error) {
+	xmlURL := "http://www.crunchyroll.com/xml/?"
+
+	// formdata to indicate the source page
+	formData := url.Values{
+		"current_page": {episode.URL},
+	}
+
+	// Constructs a queryString for user set settings
+	queryString := url.Values{}
+	if req == "RpcApiSubtitle_GetXml" {
+		queryString = url.Values{
+			"req":                {"RpcApiSubtitle_GetXml"},
+			"subtitle_script_id": {strconv.Itoa(episode.SubtitleID)},
+		}
+	} else if req == "RpcApiVideoPlayer_GetStandardConfig" {
+		queryString = url.Values{
+			"req":           {"RpcApiVideoPlayer_GetStandardConfig"},
+			"media_id":      {strconv.Itoa(episode.ID)},
+			"video_format":  {getVideoFormat(episode.Quality)},
+			"video_quality": {getVideoQuality(episode.Quality)},
+			"auto_play":     {"1"},
+			"aff":           {"crunchyroll-website"},
+			"show_pop_out_controls":   {"1"},
+			"pop_out_disable_message": {""},
+			"click_through":           {"0"},
+		}
+	} else {
+		queryString = url.Values{
+			"req":                  {req},
+			"media_id":             {strconv.Itoa(episode.ID)},
+			"video_format":         {getVideoFormat(episode.Quality)},
+			"video_encode_quality": {getVideoQuality(episode.Quality)},
+		}
+	}
+
+	// Constructs a client and request that will get the xml we're asking for
+	client := &http.Client{}
+	xmlReq, err := http.NewRequest("POST", xmlURL+queryString.Encode(), bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		return "", Error{"There was an error creating our getXML request", err}
+	}
+	xmlReq.Header.Add("Host", "www.crunchyroll.com")
+	xmlReq.Header.Add("Origin", "http://static.ak.crunchyroll.com")
+	xmlReq.Header.Add("Content-type", "application/x-www-form-urlencoded")
+	xmlReq.Header.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
+	xmlReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
+	xmlReq.Header.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
+	for c := range cookies {
+		xmlReq.AddCookie(cookies[c])
+	}
+
+	// Executes request and returns the result as a string
+	resp, err := client.Do(xmlReq)
+	if err != nil {
+		return "", Error{"There was an error executing our getXML request", err}
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", Error{"There was an error reading our getXML response", err}
+	}
+	return string(body), nil
+}
+
+// Figures out what the format of the video should be based on crunchyroll xml
+func getVideoFormat(quality string) string {
+	switch format := strings.ToLower(quality); {
+	case strings.Contains(format, "android"):
+		return "107"
+	case strings.Contains(format, "360"):
+		return "106"
+	case strings.Contains(format, "480"):
+		return "106"
+	case strings.Contains(format, "720"):
+		return "106"
+	case strings.Contains(format, "1080"):
+		return "108"
+	case strings.Contains(format, "highest"):
+		return "0"
+	default:
+		return "0"
+	}
+}
+
+// Figures out what the resolution/quality should be based on crunchyroll xml
+func getVideoQuality(quality string) string {
+	switch resolution := strings.ToLower(quality); {
+	case strings.Contains(resolution, "android"):
+		return "71"
+	case strings.Contains(resolution, "360"):
+		return "60"
+	case strings.Contains(resolution, "480"):
+		return "61"
+	case strings.Contains(resolution, "720"):
+		return "62"
+	case strings.Contains(resolution, "1080"):
+		return "80"
+	case strings.Contains(resolution, "highest"):
+		return "0"
+	default:
+		return "0"
+	}
 }

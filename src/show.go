@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,7 @@ type Episode struct {
 	Title       string
 	Description string
 	Number      float64
+	Quality     string
 	Path        string
 	URL         string
 	FileName    string
@@ -34,13 +36,28 @@ type Episode struct {
 
 // Takes the passed show name and es crunchyroll,
 // taking the first showname found as the show
-func (show *Show) FindShow(searchTerm string) error {
+func (show *Show) FindShow(searchTerm string, cookies []*http.Cookie) error {
 
 	// Reforms showName string to url param
 	encodedSearchTerm := strings.ToLower(strings.Replace(searchTerm, " ", "+", -1))
 
+	// Gets the html of the search page
+	searchReq, err := http.NewRequest("GET", "http://www.crunchyroll.com/search?from=&q="+encodedSearchTerm, nil)
+	if err != nil {
+		return Error{"There was an error creating episodes request", err}
+	}
+	searchReq.Header.Add("referer", "https://www.crunchyroll.com/")
+	searchReq.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
+	for c := range cookies {
+		searchReq.AddCookie(cookies[c])
+	}
+	searchResp, err := http.DefaultTransport.RoundTrip(searchReq)
+	if err != nil {
+		return Error{"There was an error performing show search", err}
+	}
+
 	// Gets the html of the search page we're looking for
-	searchDoc, err := goquery.NewDocument("http://www.crunchyroll.com/search?from=&q=" + encodedSearchTerm)
+	searchDoc, err := goquery.NewDocumentFromResponse(searchResp)
 	if err != nil {
 		return Error{"There was an error searching for show", err}
 	}
@@ -71,9 +88,21 @@ func (show *Show) FindShow(searchTerm string) error {
 }
 
 // Given a show pointer, appends all the seasons/episodes found for the show
-func (show *Show) GetEpisodes() error {
-	// Gets the html of the show page we previously got
-	showDoc, err := goquery.NewDocument(show.URL)
+func (show *Show) GetEpisodes(cookies []*http.Cookie) error {
+	// Gets the html of the show page
+	episodesReq, err := http.NewRequest("GET", show.URL, nil)
+	if err != nil {
+		return Error{"There was an error creating episodes request", err}
+	}
+	episodesReq.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
+	for c := range cookies {
+		episodesReq.AddCookie(cookies[c])
+	}
+	episodesResp, err := http.DefaultTransport.RoundTrip(episodesReq)
+	if err != nil {
+		return Error{"There was an error performing login request", err}
+	}
+	showDoc, err := goquery.NewDocumentFromResponse(episodesResp)
 	if err != nil {
 		return Error{"There was an error while accessing the show page", err}
 	}

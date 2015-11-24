@@ -7,8 +7,8 @@ func main() {
 	_ = session.Login("", "")
 
 	show := new(Show)
-	show.FindShow("the world is still beautiful")
-	show.GetEpisodes()
+	show.FindShow("the world is still beautiful", session.Cookies)
+	show.GetEpisodes(session.Cookies)
 	// Creates new show folder
 	for _, season := range show.Seasons {
 		// Creates new season folder

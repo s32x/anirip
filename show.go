@@ -10,6 +10,7 @@ import (
 
 type Show struct {
 	Title   string
+	AdID    string
 	Path    string
 	URL     string
 	Seasons []Season

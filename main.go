@@ -1,3 +1,5 @@
+//go:generate goversioninfo -icon=icon.ico
+
 package main
 
 import "fmt"

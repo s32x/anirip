@@ -136,8 +136,7 @@ func (episode *Episode) getSubtitleInfo(subtitles *Subtitle, language string, co
 
 	// Parses the xml into our results object
 	subListResults := SubListResults{}
-	err = xml.Unmarshal([]byte(xmlString), &subListResults)
-	if err != nil {
+	if err = xml.Unmarshal([]byte(xmlString), &subListResults); err != nil {
 		return Error{"There was an error while reading subtitle information", nil}
 	}
 
@@ -188,8 +187,9 @@ func (episode *Episode) dumpSubtitleASS(subtitles *Subtitle) error {
 		return err
 	}
 
-	// Writes the ASS subtitles to a file in our temp folder
-	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", []byte(formattedSubtitles), 0644)
+	// Writes the ASS subtitles to a file in our temp folder (with utf-8-sig encoding)
+	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
+	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", subtitlesBytes, 0644)
 	if err != nil {
 		return Error{"There was an error while writing the subtitles to file", err}
 	}
@@ -234,6 +234,7 @@ func decryptSubtitles(subtitle *Subtitle) (string, error) {
 
 func formatSubtitles(subString string) (string, error) {
 	subScript := SubtitleScript{}
+
 	// Parses the xml into our results object
 	err := xml.Unmarshal([]byte(subString), &subScript)
 	if err != nil {

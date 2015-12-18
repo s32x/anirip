@@ -6,31 +6,28 @@ import "fmt"
 
 func main() {
 	session := new(Session)
+
 	// Intro header
 	fmt.Printf("------------------------------------------------------------\n")
-	fmt.Printf("------------------ CrunchyRip 1.0 by Viz_ ------------------\n")
+	fmt.Printf("------------------ CrunchyRip 1.1 by Viz_ ------------------\n")
 	fmt.Printf("------------------------------------------------------------\n")
 
-	username := ""
-	password := ""
-	fmt.Printf("Please login to Crunchyroll below...\n")
-	getStandardUserInput("Username : ", &username)
-	getStandardUserInput("Password : ", &password)
-
-	err := session.Login(username, password)
-	if err != nil {
+	// Attempts to log the user in / request login credentials
+	if err := session.Login(); err != nil {
 		fmt.Println(err)
+		pause()
 		return
 	}
 
+	// Asks the user for their desired show and builds out a crunchyroll show object
 	show := new(Show)
-
 	desiredShow := ""
 	getStandardUserInput("Enter a Show name : ", &desiredShow)
-	show.FindShow(desiredShow, session.Cookies)
 
-	// Gets all episodes associated with the show found
+	// Finds the show and gets all the episodes associated with it
+	show.FindShow(desiredShow, session.Cookies)
 	show.GetEpisodes(session.Cookies)
+
 	// TODO Create new show folder
 	for _, season := range show.Seasons {
 		// TODO Create new season folder
@@ -38,41 +35,43 @@ func main() {
 			fmt.Printf(episode.FileName + "\n")
 
 			fmt.Printf("Downloading video...\n")
-			err = episode.DownloadEpisode("1080p", session.Cookies)
-			if err != nil {
+			if err := episode.DownloadEpisode("1080p", session.Cookies); err != nil {
 				fmt.Println(err)
-				return
+				pause()
+				break
 			}
 
 			fmt.Printf("Downloading subtitles...\n")
-			err = episode.DownloadSubtitles("English", session.Cookies)
-			if err != nil {
+			if err := episode.DownloadSubtitles("English", session.Cookies); err != nil {
 				fmt.Println(err)
-				return
+				pause()
+				break
 			}
 
 			fmt.Printf("Splitting video...\n")
-			err = Split(episode.FileName)
-			if err != nil {
+			if err := Split(episode.FileName); err != nil {
 				fmt.Println(err)
-				return
+				pause()
+				break
 			}
 
 			fmt.Printf("Merging video...\n")
-			err = Merge(episode.FileName)
-			if err != nil {
+			if err := Merge(episode.FileName); err != nil {
 				fmt.Println(err)
-				return
+				pause()
+				break
 			}
 
 			fmt.Printf("Cleaning video...\n")
-			err = Clean(episode.FileName)
-			if err != nil {
+			if err := Clean(episode.FileName); err != nil {
 				fmt.Println(err)
-				return
+				pause()
+				break
 			}
 			fmt.Printf("Downloading and merging completed successfully.\n\n")
 			// TODO Move shows
 		}
 	}
+	fmt.Printf("Completed processing episodes for " + show.Title + "\n\n")
+	pause()
 }

@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -116,72 +113,6 @@ func (episode *Episode) dumpEpisodeFLV(rtmpInfo *RTMPInfo) error {
 		episode.dumpEpisodeFLV(rtmpInfo)
 	}
 	return nil
-}
-
-// Gets XML data for the requested request type and episode
-func getXML(req string, episode *Episode, cookies []*http.Cookie) (string, error) {
-	xmlURL := "http://www.crunchyroll.com/xml/?"
-
-	// formdata to indicate the source page
-	formData := url.Values{
-		"current_page": {episode.URL},
-	}
-
-	// Constructs a queryString for user set settings
-	queryString := url.Values{}
-	if req == "RpcApiSubtitle_GetXml" {
-		queryString = url.Values{
-			"req":                {"RpcApiSubtitle_GetXml"},
-			"subtitle_script_id": {strconv.Itoa(episode.SubtitleID)},
-		}
-	} else if req == "RpcApiVideoPlayer_GetStandardConfig" {
-		queryString = url.Values{
-			"req":           {"RpcApiVideoPlayer_GetStandardConfig"},
-			"media_id":      {strconv.Itoa(episode.ID)},
-			"video_format":  {getVideoFormat(episode.Quality)},
-			"video_quality": {getVideoQuality(episode.Quality)},
-			"auto_play":     {"1"},
-			"aff":           {"crunchyroll-website"},
-			"show_pop_out_controls":   {"1"},
-			"pop_out_disable_message": {""},
-			"click_through":           {"0"},
-		}
-	} else {
-		queryString = url.Values{
-			"req":                  {req},
-			"media_id":             {strconv.Itoa(episode.ID)},
-			"video_format":         {getVideoFormat(episode.Quality)},
-			"video_encode_quality": {getVideoQuality(episode.Quality)},
-		}
-	}
-
-	// Constructs a client and request that will get the xml we're asking for
-	client := &http.Client{}
-	xmlReq, err := http.NewRequest("POST", xmlURL+queryString.Encode(), bytes.NewBufferString(formData.Encode()))
-	if err != nil {
-		return "", Error{"There was an error creating our getXML request", err}
-	}
-	xmlReq.Header.Add("Host", "www.crunchyroll.com")
-	xmlReq.Header.Add("Origin", "http://static.ak.crunchyroll.com")
-	xmlReq.Header.Add("Content-type", "application/x-www-form-urlencoded")
-	xmlReq.Header.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
-	xmlReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
-	xmlReq.Header.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
-	for c := range cookies {
-		xmlReq.AddCookie(cookies[c])
-	}
-
-	// Executes request and returns the result as a string
-	resp, err := client.Do(xmlReq)
-	if err != nil {
-		return "", Error{"There was an error executing our getXML request", err}
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", Error{"There was an error reading our getXML response", err}
-	}
-	return string(body), nil
 }
 
 // Figures out what the format of the video should be based on crunchyroll xml

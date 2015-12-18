@@ -20,7 +20,7 @@ type Session struct {
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func (session *Session) Login(user string, pass string) error {
+func (session *Session) Login() error {
 	// First checks to see if we already have a cookie config
 	exists, err := getStoredCookies(session)
 	if err != nil {
@@ -30,8 +30,9 @@ func (session *Session) Login(user string, pass string) error {
 	// If we don't already have cookies, get new ones
 	if session.Cookies == nil || session.User == "" {
 		// Ask for credentials and request new cookies
-		session.User = user
-		session.Pass = pass
+		fmt.Printf("Please login to Crunchyroll below...\n")
+		getStandardUserInput("Username : ", &session.User)
+		getStandardUserInput("Password : ", &session.Pass)
 		err := createNewCookies(session)
 		if err != nil {
 			return err

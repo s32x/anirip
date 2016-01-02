@@ -1,6 +1,8 @@
 # CrunchyRip
 A Crunchyroll episode/subtitle scraper/dumper written in GO
 
+![alt text](/images/crunchyrip1.png "CrunchyRip v1.1 Screenshot")
+
 ## Dependencies
 In order to run CrunchyRip the below binaries are required (not included)...
 - FLVExtract as ```flvextract.exe``` in \temp\ dir

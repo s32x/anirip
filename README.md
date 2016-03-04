@@ -1,6 +1,8 @@
 # ANIRip
 A Crunchyroll & Daisuki episode/subtitle ripper written in GO
 
+![alt text](/images/anirip1.png "ANIRip v1.1 Screenshot")
+
 ## Dependencies
 In order to run ANIRip the below windows binaries are required (not included)...
 - PHP(5.2.0) in \engine\php\ dir

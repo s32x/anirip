@@ -2,185 +2,167 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
-type Error struct {
-	Message string
-	Err     error
-}
-
-func (e Error) Error() string {
-	if e.Err != nil {
-		return fmt.Sprintf(">>> Error : %v : %v", e.Message, e.Err)
+// Trims the first couple seconds off of the video to remove any logos
+func trimMKV(fileName string, adLength, estKeyFrame int) error {
+	// Recursively retries rename to temp filename before execution
+	if err := os.Rename("temp\\"+fileName+".mkv", "temp\\untrimmed."+fileName+".mkv"); err != nil {
+		trimMKV(fileName, adLength, estKeyFrame)
 	}
-	return fmt.Sprintf(">>> Error : %v.", e.Message)
-}
 
-// Splits the episode into multiple media files that we will later merge together
-func Split(fileName string) error {
-	// TODO check if file exists before attempting extraction
-	path, err := exec.LookPath("engine\\flvextract.exe")
+	// Store the untrimmed video length so we can find the video prefix length later
+	untrimmedLength, err := getVideoLength("temp\\untrimmed." + fileName + ".mkv")
 	if err != nil {
-		return Error{"Unable to find flvextract.exe in \\engine\\ directory", err}
+		return err
 	}
 
-	// Creates the command which we will use to split our flv
-	cmd := exec.Command(path, "-v", "-a", "-t", "-o", "temp\\"+fileName+".flv")
+	// Finds ffmpeg so we can call system commands on it
+	ffmpeg, err := exec.LookPath("engine\\ffmpeg.exe")
+	if err != nil {
+		return anirip.Error{Message: "Unable to find ffmpeg.exe in \\engine\\ directory", Err: err}
+	}
 
-	// Executes the extraction and waits for a response
-	err = cmd.Start()
+	// Calculates the keyframe offsets for trimming the meat of the video
+	keyFrameOffset := float64(estKeyFrame) / 1000
+	keyFrameOffsetString := strconv.FormatFloat(keyFrameOffset, 'f', 3, 64)
+
+	// Executes the rough frame trimming and waits for command to finish
+	_, err = exec.Command(ffmpeg,
+		"-ss", keyFrameOffsetString,
+		"-i", "temp\\untrimmed."+fileName+".mkv",
+		"-c:v", "copy",
+		"-c:a", "copy", "-y",
+		"temp\\video."+fileName+".mkv").Output()
 	if err != nil {
-		return Error{"There was an error while executing our extracter", err}
+		return anirip.Error{Message: "There was an error while creating the video clip", Err: err}
 	}
-	err = cmd.Wait()
+
+	// Gets the new video length and calculates the prefix length based on the sizes
+	videoLength, err := getVideoLength("temp\\video." + fileName + ".mkv")
 	if err != nil {
-		return Error{"There was an error while extracting", err}
+		return err
 	}
+	keyFrameGap := (untrimmedLength - videoLength) - adLength - 0040
+
+	// Calculates the intro offsets we will use and represents it as a string
+	trueOffset := float64(adLength) / 1000
+	trueOffsetString := strconv.FormatFloat(trueOffset, 'f', 3, 64)
+	gapOffset := float64(keyFrameGap) / 1000
+	gapOffsetString := strconv.FormatFloat(gapOffset, 'f', 3, 64)
+
+	// Executes the fine intro trim and waits for the command to finish
+	_, err = exec.Command(ffmpeg,
+		"-ss", trueOffsetString, // Exact timestamp of the ad endings
+		"-i", "temp\\untrimmed."+fileName+".mkv",
+		"-t", gapOffsetString, // The exact time between ad ending and frame next keyframe
+		"-crf", "5",
+		"-vsync", "1",
+		"-r", "24",
+		"-c:a", "aac", "-y", // Use AAC as audio codec to match video.mkv
+		"temp\\prefix."+fileName+".mkv").Output()
+	if err != nil {
+		return anirip.Error{Message: "There was an error while creating the prefix clip", Err: err}
+	}
+
+	// Creates a text file containing the file names of the 2 files created above
+	fileListBytes := []byte("file 'temp\\prefix." + fileName + ".mkv'\r\nfile 'temp\\video." + fileName + ".mkv'")
+	if err = ioutil.WriteFile("temp\\list."+fileName+".txt", fileListBytes, 0644); err != nil {
+		return anirip.Error{Message: "There was an error while creating list." + fileName + ".txt", Err: err}
+	}
+
+	// Executes the merge of our two temporary files
+	_, err = exec.Command(ffmpeg,
+		"-f", "concat",
+		"-i", "temp\\list."+fileName+".txt",
+		"-c:v", "copy",
+		"-c:a", "copy", "-y",
+		"temp\\"+fileName+".mkv").Output()
+	if err != nil {
+		return anirip.Error{Message: "There was an error while merging video and prefix", Err: err}
+	}
+
+	// Removes the temporary files we created as they are no longer neede
+	os.Remove("temp\\untrimmed." + fileName + ".mkv")
+	os.Remove("temp\\prefix." + fileName + ".mkv")
+	os.Remove("temp\\video." + fileName + ".mkv")
+	os.Remove("temp\\list." + fileName + ".txt")
 	return nil
 }
 
-// Merges all media files including subs
-func Merge(fileName string) error {
-	// TODO check if files exist before attempting final merge
-	path, err := exec.LookPath("engine\\mkvmerge.exe")
-	if err != nil {
-		return Error{"Unable to find mkvmerge.exe in \\engine\\ directory", err}
+// Merges a VIDEO.mkv and a VIDEO.ass
+func mergeSubtitles(fileName, audioLang, subtitleLang string) error {
+	// Recursively retries rename to temp filename before execution
+	if err := os.Rename("temp\\"+fileName+".mkv", "temp\\unmerged."+fileName+".mkv"); err != nil {
+		mergeSubtitles(fileName, audioLang, subtitleLang)
 	}
 
-	// Creates the command which we will use to split our flv
+	path, err := exec.LookPath("engine\\ffmpeg.exe")
+	if err != nil {
+		return anirip.Error{Message: "Unable to find ffmpeg.exe in \\engine\\ directory", Err: err}
+	}
+
+	// Creates the command which we will use to merge our subtitles and video
 	cmd := exec.Command(path,
-		"-o", "temp\\"+fileName+".mkv",
-		"--language", "0:eng",
-		"temp\\"+fileName+".ass",
-		"temp\\"+fileName+".264",
-		"--aac-is-sbr", "0",
-		"temp\\"+fileName+".aac")
+		"-i", "temp\\unmerged."+fileName+".mkv",
+		"-f", "ass",
+		"-i", "temp\\"+fileName+".ass",
+		"-c:v", "copy",
+		"-c:a", "copy",
+		"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLang
+		"-metadata:s:s:0", "language="+subtitleLang, // sets subtitle language to subtitleLang
+		"-disposition:s:0", "default",
+		"-y", "temp\\"+fileName+".mkv")
 
-	// Executes the extraction and waits for a response
+	// Executes the merge command and waits for a response
 	err = cmd.Start()
 	if err != nil {
-		return Error{"There was an error while executing our merger", err}
+		return anirip.Error{Message: "There was an error while executing our merger", Err: err}
 	}
-
-	// Waits for the merge to complete
 	err = cmd.Wait()
 	if err != nil {
-		return Error{"There was an error while merging", err}
-	}
-	_, err = exec.LookPath("temp\\" + fileName + ".mkv")
-	if err != nil {
-		return Error{"Merged MKV was not found after merger", err}
+		return anirip.Error{Message: "There was an error while merging", Err: err}
 	}
 
-	// Erases all old media files that we no longer need
+	// Removes old temp files
 	os.Remove("temp\\" + fileName + ".ass")
-	os.Remove("temp\\" + fileName + ".264")
-	os.Remove("temp\\" + fileName + ".txt")
-	os.Remove("temp\\" + fileName + ".aac")
-	os.Remove("temp\\" + fileName + ".flv")
+	os.Remove("temp\\unmerged." + fileName + ".mkv")
 	return nil
 }
 
-// Cleans up the mkv, optimizing it for playback as well as old remaining files
-func Clean(fileName string) error {
-	// TODO check if file exists before attempting extraction
+// Cleans up the mkv, optimizing it for playback
+func cleanMKV(fileName string) error {
+	// Recursively retries rename to temp filename before execution
+	if err := os.Rename("temp\\"+fileName+".mkv", "temp\\dirty."+fileName+".mkv"); err != nil {
+		cleanMKV(fileName)
+	}
+
+	// Finds the path of mkclean.exe so we can perform system calls on it
 	path, err := exec.LookPath("engine\\mkclean.exe")
 	if err != nil {
-		return Error{"Unable to find mkclean.exe in \\engine\\ directory", err}
+		return anirip.Error{Message: "Unable to find mkclean.exe in \\engine\\ directory", Err: err}
 	}
 
 	// Creates the command which we will use to clean our mkv to "video.clean.mkv"
-	cmd := exec.Command(path, "--optimize", "temp\\"+fileName+".mkv")
-
-	// Executes the cleaning and waits for a response
-	err = cmd.Start()
+	_, err = exec.Command(path,
+		"--optimize",
+		"temp\\dirty."+fileName+".mkv",
+		"temp\\"+fileName+".mkv").Output()
 	if err != nil {
-		return Error{"There was an error while executing our mkv optimizer", err}
-	}
-	err = cmd.Wait()
-	if err != nil {
-		return Error{"There was an error while optimizing our mkv", err}
+		return anirip.Error{Message: "There was an error while optimizing our mkv", Err: err}
 	}
 
 	// Deletes the old, un-needed dirty mkv file
-	os.Remove("temp\\" + fileName + ".mkv")
-	os.Rename("temp\\clean."+fileName+".mkv", "temp\\"+fileName+".mkv")
+	os.Remove("temp\\dirty." + fileName + ".mkv")
 	return nil
-}
-
-// Gets XML data for the requested request type and episode
-func getXML(req string, episode *Episode, cookies []*http.Cookie) (string, error) {
-	xmlURL := "http://www.crunchyroll.com/xml/?"
-
-	// formdata to indicate the source page
-	formData := url.Values{
-		"current_page": {episode.URL},
-	}
-
-	// Constructs a queryString for user set settings
-	queryString := url.Values{}
-	if req == "RpcApiSubtitle_GetXml" {
-		queryString = url.Values{
-			"req":                {"RpcApiSubtitle_GetXml"},
-			"subtitle_script_id": {strconv.Itoa(episode.SubtitleID)},
-		}
-	} else if req == "RpcApiVideoPlayer_GetStandardConfig" {
-		queryString = url.Values{
-			"req":           {"RpcApiVideoPlayer_GetStandardConfig"},
-			"media_id":      {strconv.Itoa(episode.ID)},
-			"video_format":  {getVideoFormat(episode.Quality)},
-			"video_quality": {getVideoQuality(episode.Quality)},
-			"auto_play":     {"1"},
-			"aff":           {"crunchyroll-website"},
-			"show_pop_out_controls":   {"1"},
-			"pop_out_disable_message": {""},
-			"click_through":           {"0"},
-		}
-	} else {
-		queryString = url.Values{
-			"req":                  {req},
-			"media_id":             {strconv.Itoa(episode.ID)},
-			"video_format":         {getVideoFormat(episode.Quality)},
-			"video_encode_quality": {getVideoQuality(episode.Quality)},
-		}
-	}
-
-	// Constructs a client and request that will get the xml we're asking for
-	client := &http.Client{}
-	xmlReq, err := http.NewRequest("POST", xmlURL+queryString.Encode(), bytes.NewBufferString(formData.Encode()))
-	if err != nil {
-		return "", Error{"There was an error creating our getXML request", err}
-	}
-	xmlReq.Header.Add("Host", "www.crunchyroll.com")
-	xmlReq.Header.Add("Origin", "http://static.ak.crunchyroll.com")
-	xmlReq.Header.Add("Content-type", "application/x-www-form-urlencoded")
-	xmlReq.Header.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
-	xmlReq.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
-	xmlReq.Header.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
-	for c := range cookies {
-		xmlReq.AddCookie(cookies[c])
-	}
-
-	// Executes request and returns the result as a string
-	resp, err := client.Do(xmlReq)
-	if err != nil {
-		return "", Error{"There was an error executing our getXML request", err}
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", Error{"There was an error reading our getXML response", err}
-	}
-	return string(body), nil
 }
 
 // Gets user input from the user and unmarshalls it into the input
@@ -192,41 +174,39 @@ func getStandardUserInput(prefixText string, input *string) error {
 		break
 	}
 	if err := scanner.Err(); err != nil {
-		return Error{"There was an error getting standard user input", err}
+		return anirip.Error{Message: "There was an error getting standard user input", Err: err}
 	}
 	return nil
 }
 
-// Pauses the program and waits for the user to press enter
+// Uses ffprobe to find the length of a video and returns it in ms
+func getVideoLength(videoPath string) (int, error) {
+	// Gets the ffprobe path which we will use to figure out the video length
+	ffprobe, err := exec.LookPath("engine\\ffprobe.exe")
+	if err != nil {
+		return 0, anirip.Error{Message: "Unable to find ffprobe.exe in \\engine\\ directory", Err: err}
+	}
+
+	// Asks for the length of our video
+	output, err := exec.Command(ffprobe,
+		"-v", "error",
+		"-show_entries", "format=duration",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		videoPath).Output()
+	if err != nil {
+		return 0, anirip.Error{Message: "There was an error measuring " + videoPath, Err: err}
+	}
+
+	// Grabs the output and parses it to a float64
+	length, err := strconv.ParseFloat(strings.Replace(string(output), "\r\n", "", -1), 64)
+	if err != nil {
+		return 0, anirip.Error{Message: "There was an error parsing the length of " + videoPath, Err: err}
+	}
+	return int(length * 1000), nil
+}
+
+// Blocks execution and waits for the user to press enter
 func pause() {
 	fmt.Print("Press 'Enter' to continue...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
-}
-
-// Constructs an episode file name and returns the file name cleaned
-func generateEpisodeFileName(showTitle string, seasonNumber int, episodeNumber float64, description string) string {
-	// Pads season number with a 0 if it's less than 10
-	seasonNumberString := strconv.Itoa(seasonNumber)
-	if seasonNumber < 10 {
-		seasonNumberString = "0" + strconv.Itoa(seasonNumber)
-	}
-
-	// Pads episode number with a 0 if it's less than 10
-	episodeNumberString := strconv.FormatFloat(episodeNumber, 'f', -1, 64)
-	if episodeNumber < 10 {
-		episodeNumberString = "0" + strconv.FormatFloat(episodeNumber, 'f', -1, 64)
-	}
-
-	// Constructs episode file name and returns it
-	fileName := strings.Title(showTitle) + " - S" + seasonNumberString + "E" + episodeNumberString + " - " + description
-	return cleanFileName(fileName)
-}
-
-// Cleans the new file/folder name so there won't be any write issues
-func cleanFileName(fileName string) string {
-	newFileName := fileName // Strips out any illegal characters and returns our new file name
-	for _, illegalChar := range []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"} {
-		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
-	}
-	return newFileName
 }

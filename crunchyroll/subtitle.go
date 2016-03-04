@@ -1,4 +1,4 @@
-package main
+package crunchyroll
 
 import (
 	"bytes"
@@ -12,8 +12,11 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
 type SubListResults struct {
@@ -95,7 +98,8 @@ type Event struct {
 }
 
 // Entirely downloads subtitles to our temp directory
-func (episode *Episode) DownloadSubtitles(language string, cookies []*http.Cookie) error {
+// IGNORING offset for now (no reason to trim cr subs)
+func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, cookies []*http.Cookie) error {
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
 	err := episode.getSubtitleInfo(subtitles, language, cookies)
@@ -122,22 +126,52 @@ func (episode *Episode) DownloadSubtitles(language string, cookies []*http.Cooki
 	return nil
 }
 
-func (episode *Episode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) error {
-	// First gets the XML of the episode subtitle
-	xmlString, err := getXML("RpcApiSubtitle_GetListing", episode, cookies)
+func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) error {
+	// Formdata to indicate the source page
+	formData := url.Values{
+		"current_page": {episode.URL},
+	}
+
+	// Querystring to ask for the subtitles info
+	queryString := url.Values{
+		"req":                  {"RpcApiSubtitle_GetListing"},
+		"media_id":             {strconv.Itoa(episode.ID)},
+		"video_format":         {getVideoFormat(episode.Quality)},
+		"video_encode_quality": {getVideoQuality(episode.Quality)},
+	}
+
+	// Performs the HTTP Request that will get the XML
+	subtitleInfoReqHeaders := http.Header{}
+	subtitleInfoReqHeaders.Add("Host", "www.crunchyroll.com")
+	subtitleInfoReqHeaders.Add("Origin", "http://static.ak.crunchyroll.com")
+	subtitleInfoReqHeaders.Add("Content-type", "application/x-www-form-urlencoded")
+	subtitleInfoReqHeaders.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
+	subtitleInfoReqHeaders.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
+	subtitleInfoResponse, err := anirip.GetHTTPResponse("POST",
+		"http://www.crunchyroll.com/xml/?"+queryString.Encode(),
+		bytes.NewBufferString(formData.Encode()),
+		subtitleInfoReqHeaders,
+		cookies)
 	if err != nil {
 		return err
 	}
 
+	// Reads the bytes from the recieved subtitle info xml response body
+	subtitleInfoBody, err := ioutil.ReadAll(subtitleInfoResponse.Body)
+	if err != nil {
+		return anirip.Error{Message: "There was an error reading the xml response", Err: err}
+	}
+	xmlString := string(subtitleInfoBody)
+
 	// Return if we see that the show has embedded/hardcoded subtitles
 	if strings.Contains("<media_id>None</media_id>", xmlString) {
-		return Error{"This episode has embedded subtitles", nil}
+		return anirip.Error{Message: "This episode has embedded subtitles", Err: nil}
 	}
 
 	// Parses the xml into our results object
 	subListResults := SubListResults{}
-	if err = xml.Unmarshal([]byte(xmlString), &subListResults); err != nil {
-		return Error{"There was an error while reading subtitle information", nil}
+	if err = xml.Unmarshal(subtitleInfoBody, &subListResults); err != nil {
+		return anirip.Error{Message: "There was an error while reading subtitle information", Err: nil}
 	}
 
 	// Finds the subtitle ID of the language we want
@@ -156,25 +190,54 @@ func (episode *Episode) getSubtitleInfo(subtitles *Subtitle, language string, co
 			episode.SubtitleID = subtitles.ID
 		}
 	}
-	return Error{"Unable to find any subtitles we were looking for", nil}
+	return anirip.Error{Message: "Unable to find any subtitles we were looking for", Err: nil}
 }
 
-func (episode *Episode) getSubtitleData(subtitles *Subtitle, cookies []*http.Cookie) error {
-	// Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
-	xmlString, err := getXML("RpcApiSubtitle_GetXml", episode, cookies)
+// Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
+func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies []*http.Cookie) error {
+	// Formdata to indicate the source page
+	formData := url.Values{
+		"current_page": {episode.URL},
+	}
+
+	// Querystring to ask for the subtitles data
+	queryString := url.Values{
+		"req":                {"RpcApiSubtitle_GetXml"},
+		"subtitle_script_id": {strconv.Itoa(episode.SubtitleID)},
+	}
+
+	// Performs the HTTP Request that will get the XML
+	subtitleDataReqHeaders := http.Header{}
+	subtitleDataReqHeaders.Add("Host", "www.crunchyroll.com")
+	subtitleDataReqHeaders.Add("Origin", "http://static.ak.crunchyroll.com")
+	subtitleDataReqHeaders.Add("Content-type", "application/x-www-form-urlencoded")
+	subtitleDataReqHeaders.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
+	subtitleDataReqHeaders.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
+	subtitleDataResponse, err := anirip.GetHTTPResponse("POST",
+		"http://www.crunchyroll.com/xml/?"+queryString.Encode(),
+		bytes.NewBufferString(formData.Encode()),
+		subtitleDataReqHeaders,
+		cookies)
 	if err != nil {
 		return err
 	}
 
-	// Parses the xml into our results object
-	err = xml.Unmarshal([]byte(xmlString), &subtitles)
+	// Reads the bytes from the recieved subtitle data xml response body
+	subtitleDataBody, err := ioutil.ReadAll(subtitleDataResponse.Body)
 	if err != nil {
-		return Error{"There was an error reading xml", err}
+		return anirip.Error{Message: "There was an error reading the xml response", Err: err}
+	}
+
+	// Parses the xml into our results object
+	err = xml.Unmarshal(subtitleDataBody, &subtitles)
+	if err != nil {
+		return anirip.Error{Message: "There was an error reading xml", Err: err}
 	}
 	return nil
 }
 
-func (episode *Episode) dumpSubtitleASS(subtitles *Subtitle) error {
+// Dumps the crunchyroll subtitles to file to be muxed into MKV
+func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle) error {
 	// Attempts to decrypt the compressed subtitles we recieved
 	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {
@@ -191,27 +254,28 @@ func (episode *Episode) dumpSubtitleASS(subtitles *Subtitle) error {
 	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
 	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", subtitlesBytes, 0644)
 	if err != nil {
-		return Error{"There was an error while writing the subtitles to file", err}
+		return anirip.Error{Message: "There was an error while writing the subtitles to file", Err: err}
 	}
 	return nil
 }
 
+// Decrypts the titles
 func decryptSubtitles(subtitle *Subtitle) (string, error) {
 	// Generates the key that will be used to decrypt our subtitles
 	key := generateKey(subtitle.ID)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", Error{"There was an error while creating a key cipher block", err}
+		return "", anirip.Error{Message: "There was an error while creating a key cipher block", Err: err}
 	}
 
 	// Gets the bytes of both our iv and subtitle data
 	iv, err := base64.StdEncoding.DecodeString(subtitle.Iv)
 	if err != nil {
-		return "", Error{"There was an error while decoding our subtitle iv", err}
+		return "", anirip.Error{Message: "There was an error while decoding our subtitle iv", Err: err}
 	}
 	data, err := base64.StdEncoding.DecodeString(subtitle.Data)
 	if err != nil {
-		return "", Error{"There was an error while decoding our subtitle data", err}
+		return "", anirip.Error{Message: "There was an error while decoding our subtitle data", Err: err}
 	}
 
 	// Decrypts our subtitles back into our data byte array
@@ -223,7 +287,7 @@ func decryptSubtitles(subtitle *Subtitle) (string, error) {
 	var subOutput bytes.Buffer
 	zlibReader, err := zlib.NewReader(reader)
 	if err != nil {
-		return "", Error{"There was an error while creating a new zlib reader", err}
+		return "", anirip.Error{Message: "There was an error while creating a new zlib reader", Err: err}
 	}
 	io.Copy(&subOutput, zlibReader)
 	zlibReader.Close()
@@ -238,7 +302,7 @@ func formatSubtitles(subString string) (string, error) {
 	// Parses the xml into our results object
 	err := xml.Unmarshal([]byte(subString), &subScript)
 	if err != nil {
-		return "", Error{"There was an error while parsing the XML subtitles", err}
+		return "", anirip.Error{Message: "There was an error while parsing the XML subtitles", Err: err}
 	}
 
 	// Discarding language for now in order to set to default playback subtitle (subScript.Title)

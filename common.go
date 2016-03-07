@@ -120,7 +120,6 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 // Merges a VIDEO.mkv and a VIDEO.ass
 func mergeSubtitles(fileName, audioLang, subtitleLang, engineDir, tempDir string) error {
 	// Removes a stale temp files to avoid conflcts in func
-	os.Remove(tempDir + "\\" + fileName + ".ass")
 	os.Remove(tempDir + "\\" + "unmerged." + fileName + ".mkv")
 
 	// Recursively retries rename to temp filename before execution

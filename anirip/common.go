@@ -7,12 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"unicode"
 )
-
-func isMn(r rune) bool {
-	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
-}
 
 // A rename func that retries 10 times before returning an error
 func Rename(sourcesFile, destinationFile string, i int) error {

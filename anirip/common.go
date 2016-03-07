@@ -75,7 +75,7 @@ func GenerateEpisodeFileName(showTitle string, seasonNumber int, episodeNumber f
 func CleanFileName(fileName string) string {
 	newFileName := fileName // Strips out any illegal characters and returns our new file name
 	for _, illegalChar := range []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"} {
-		newFileName = strings.Replace(newFileName, illegalChar, " ", -1)
+		newFileName = strings.Replace(newFileName, illegalChar, "", -1)
 	}
 	return newFileName
 }

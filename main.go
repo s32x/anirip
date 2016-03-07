@@ -35,17 +35,6 @@ var (
 	sunriseIntroTrim = "n"
 )
 
-func login(session anirip.Session, username, password, cookieDir string) {
-	fmt.Printf("\n")
-	if err := session.Login(username, password, cookieDir); err != nil {
-		fmt.Println("Please login to the above provider.")
-		getStandardUserInput("Username : ", &username)
-		getStandardUserInput("Password : ", &password)
-		login(session, username, password, cookieDir)
-	}
-	return
-}
-
 func main() {
 	// Intro header
 	fmt.Printf("-------------------------------------------------------------\n")
@@ -195,4 +184,15 @@ func main() {
 	}
 	fmt.Printf("Completed processing episodes for " + show.GetTitle() + "\n\n")
 	pause()
+}
+
+func login(session anirip.Session, username, password, cookieDir string) {
+	fmt.Printf("\n")
+	if err := session.Login(username, password, cookieDir); err != nil {
+		fmt.Println("Please login to the above provider.")
+		getStandardUserInput("Username : ", &username)
+		getStandardUserInput("Password : ", &password)
+		login(session, username, password, cookieDir)
+	}
+	return
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"unicode"
@@ -11,6 +12,18 @@ import (
 
 func isMn(r rune) bool {
 	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+
+// A rename func that retries 10 times before returning an error
+func Rename(sourcesFile, destinationFile string, i int) error {
+	// Attempts a rename and if it fails, it will retry i times
+	if err := os.Rename(sourcesFile, destinationFile); err != nil {
+		if i > 0 {
+			Rename(sourcesFile, destinationFile, i-1)
+		}
+		return Error{Message: "There was an error renaming " + sourcesFile + " to " + destinationFile, Err: err}
+	}
+	return nil
 }
 
 // A shorthand function for writing http requests. NOTE: Uses a default user-agent for every request
@@ -54,7 +67,7 @@ func GenerateEpisodeFileName(showTitle string, seasonNumber int, episodeNumber f
 	}
 
 	// Constructs episode file name and returns it
-	fileName := strings.Title(showTitle) + " - S" + seasonNumberString + "E" + episodeNumberString + " - " + description
+	fileName := showTitle + " - S" + seasonNumberString + "E" + episodeNumberString + " - " + description
 	return CleanFileName(fileName)
 }
 

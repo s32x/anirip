@@ -27,7 +27,6 @@ type CrunchyrollSeason struct {
 type CrunchyrollEpisode struct {
 	ID          int
 	SubtitleID  int
-	SubtitleURL string
 	Title       string
 	Description string
 	Number      float64
@@ -35,6 +34,13 @@ type CrunchyrollEpisode struct {
 	Path        string
 	URL         string
 	FileName    string
+	MediaInfo   RTMPInfo
+}
+
+type RTMPInfo struct {
+	URLOne string
+	URLTwo string
+	File   string
 }
 
 // Given a show pointer, appends all the seasons/episodes found for the show
@@ -81,17 +87,15 @@ func (show *CrunchyrollShow) ScrapeEpisodes(showURL string, cookies []*http.Cook
 			episodeList.Find("div.wrapper.container-shadow.hover-classes").Each(func(i3 int, episode *goquery.Selection) {
 				// Appends all new episode information to newly appended season
 				episodeTitle := strings.TrimSpace(strings.Replace(episode.Find("span.series-title.block.ellipsis").First().Text(), "\n", "", 1))
-				episodeDescription := strings.TrimSpace(episode.Find("p.short-desc").First().Text())
 				episodeNumber, _ := strconv.ParseFloat(strings.Replace(episodeTitle, "Episode ", "", 1), 64)
 				episodePath, _ := episode.Find("a").First().Attr("href")
 				episodeID, _ := strconv.Atoi(episodePath[len(episodePath)-6:])
 				show.Seasons[i2].Episodes = append(show.Seasons[i2].Episodes, CrunchyrollEpisode{
-					ID:          episodeID,
-					Title:       episodeTitle,
-					Description: episodeDescription,
-					Number:      episodeNumber,
-					Path:        episodePath,
-					URL:         "http://www.crunchyroll.com" + episodePath,
+					ID:     episodeID,
+					Title:  episodeTitle,
+					Number: episodeNumber,
+					Path:   episodePath,
+					URL:    "http://www.crunchyroll.com" + episodePath,
 				})
 			})
 		})
@@ -120,7 +124,7 @@ func (show *CrunchyrollShow) ScrapeEpisodes(showURL string, cookies []*http.Cook
 	for s, season := range show.Seasons {
 		show.Seasons[s].Number = s + 1
 		for e, episode := range season.Episodes {
-			show.Seasons[s].Episodes[e].FileName = anirip.GenerateEpisodeFileName(show.Title, show.Seasons[s].Number, episode.Number, episode.Description)
+			show.Seasons[s].Episodes[e].FileName = anirip.GenerateEpisodeFileName(show.Title, show.Seasons[s].Number, episode.Number, "")
 		}
 	}
 
@@ -149,4 +153,9 @@ func (season *CrunchyrollSeason) GetEpisodes() anirip.Episodes {
 		episodes = append(episodes, &season.Episodes[i])
 	}
 	return episodes
+}
+
+// Return the season number that will be used for folder naming
+func (season *CrunchyrollSeason) GetNumber() int {
+	return season.Number
 }

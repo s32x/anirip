@@ -48,10 +48,10 @@ type Event struct {
 }
 
 // Entirely downloads subtitles to our temp directory
-func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, cookies []*http.Cookie) error {
+func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
 	// Since we already have the subtitle info lets just go and download the subs
 	// If we get back a subtitle that was nil (no ID), there are no subs available
-	if episode.SubtitleURL == "" {
+	if episode.SubtitleInfo.TTMLUrl == "" {
 		return nil
 	}
 
@@ -62,7 +62,7 @@ func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, co
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	if err := episode.dumpSubtitleASS(language, offset, subtitles); err != nil {
+	if err := episode.dumpSubtitleASS(language, offset, subtitles, tempDir); err != nil {
 		return err
 	}
 	return nil
@@ -77,7 +77,7 @@ func (episode *DaisukiEpisode) getSubtitles(subtitles *TT, cookies []*http.Cooki
 	subReqHeaders := http.Header{}
 	subReqHeaders.Add("referrer", episode.URL)
 	subtitleResp, err := anirip.GetHTTPResponse("GET",
-		episode.SubtitleURL+"?cashPath="+nowMillis,
+		episode.SubtitleInfo.TTMLUrl+"?cashPath="+nowMillis,
 		nil,
 		subReqHeaders,
 		cookies)
@@ -99,7 +99,7 @@ func (episode *DaisukiEpisode) getSubtitles(subtitles *TT, cookies []*http.Cooki
 }
 
 // Writes formatted ASS subtitles to file
-func (episode *DaisukiEpisode) dumpSubtitleASS(language string, offset int, subtitles *TT) error {
+func (episode *DaisukiEpisode) dumpSubtitleASS(language string, offset int, subtitles *TT, tempDir string) error {
 	// Attempts to format the subtitles for ASS
 	formattedSubtitles, err := formatSubtitles(language, offset, subtitles)
 	if err != nil || formattedSubtitles == "" {
@@ -108,7 +108,7 @@ func (episode *DaisukiEpisode) dumpSubtitleASS(language string, offset int, subt
 
 	// Writes the ASS subtitles to a file in our temp folder (with utf-8-sig encoding)
 	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
-	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", subtitlesBytes, 0644)
+	err = ioutil.WriteFile(tempDir+"\\"+episode.FileName+".ass", subtitlesBytes, 0644)
 	if err != nil {
 		return anirip.Error{Message: "There was an error while writing the subtitles to file", Err: err}
 	}

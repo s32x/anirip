@@ -20,9 +20,9 @@ type DaisukiSession struct {
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func (session *DaisukiSession) Login(user string, pass string) error {
+func (session *DaisukiSession) Login(user, pass, cookieDir string) error {
 	// First checks to see if we already have a cookie config
-	exists, err := getStoredCookies(session)
+	exists, err := getStoredCookies(session, cookieDir)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (session *DaisukiSession) Login(user string, pass string) error {
 		}
 
 		// Writes cookies to cookies file
-		err := ioutil.WriteFile("daisuki.cookie", sessionBytes.Bytes(), 0644)
+		err := ioutil.WriteFile(cookieDir+"\\daisuki.cookie", sessionBytes.Bytes(), 0644)
 		if err != nil {
 			return anirip.Error{Message: "There was an error writing cookies to file", Err: err}
 		}
@@ -70,13 +70,13 @@ func (session *DaisukiSession) GetCookies() []*http.Cookie {
 }
 
 // Gets stored cookies found in cookiesFile
-func getStoredCookies(session *DaisukiSession) (bool, error) {
+func getStoredCookies(session *DaisukiSession, cookieDir string) (bool, error) {
 	// Checks if file exists - will return it's contents if so
-	if _, err := os.Stat("daisuki.cookie"); err == nil {
-		sessionBytes, err := ioutil.ReadFile("daisuki.cookie")
+	if _, err := os.Stat(cookieDir + "\\daisuki.cookie"); err == nil {
+		sessionBytes, err := ioutil.ReadFile(cookieDir + "\\daisuki.cookie")
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("daisuki.cookie")
+			_ = os.Remove(cookieDir + "\\daisuki.cookie")
 			return false, anirip.Error{Message: "There was an error reading your cookies file", Err: err}
 		}
 
@@ -88,7 +88,7 @@ func getStoredCookies(session *DaisukiSession) (bool, error) {
 		err = sessionDecoder.Decode(&session)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("daisuki.cookie")
+			_ = os.Remove(cookieDir + "\\daisuki.cookie")
 			return false, anirip.Error{Message: "There was an error decoding your cookies file", Err: err}
 		}
 		// Cookies are able to be decoded so return true

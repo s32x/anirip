@@ -14,8 +14,8 @@ import (
 	mrand "math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -73,43 +73,10 @@ type MetaData struct {
 	} `json:"ss_ext"`
 }
 
-type HDSInfo struct {
-	ManifestURL string
-}
-
-// Downloads entire FLV episodes to our temp directory
-func (episode *DaisukiEpisode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
-	// Allocates memory to hold info on downloading the episode
-	hdsInfo := new(HDSInfo)
-	err := episode.getEpisodeInfo(hdsInfo, cookies)
-	if err != nil {
-		return err
-	}
-
-	// Checks to see if the episode already exists, in which case we return os.stat error
-	_, err = os.Stat("temp\\" + episode.FileName + ".mkv")
-	if err == nil {
-		return anirip.Error{Message: "This video has already been downloaded...", Err: err}
-	}
-
-	// Attempts to dump the FLV of the episode to file
-	err = episode.dumpEpisodeFLV(quality, hdsInfo)
-	if err != nil {
-		return err
-	}
-
-	// Finally renames the dumped FLV to an MKV
-	os.Rename("temp\\"+episode.FileName+".flv", "temp\\"+episode.FileName+".mkv")
-	return nil
-}
-
-// Gets the filename of the episode for referencing outside of this lib
-func (episode *DaisukiEpisode) GetFileName() string {
-	return episode.FileName
-}
-
 // Parses the xml and returns what we need from the xml
-func (episode *DaisukiEpisode) getEpisodeInfo(hdsInfo *HDSInfo, cookies []*http.Cookie) error {
+func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Cookie) error {
+	episode.Quality = quality // Sets the quality to the passed quality string
+
 	// Gets the HTML of the episode page
 	episodeReqHeaders := http.Header{}
 	episodeReqHeaders.Add("referer", "http://www.daisuki.net/us/en/anime/detail."+strings.Split(episode.Path, ".")[1]+".html")
@@ -237,6 +204,7 @@ func (episode *DaisukiEpisode) getEpisodeInfo(hdsInfo *HDSInfo, cookies []*http.
 	mode := cipher.NewCBCEncrypter(cipherBlock, iv)
 	mode.CryptBlocks(cipherApiJSON, plainApiJSON)
 
+	// Key uused to re-encrypt our request data to daisuki
 	var pemPublicKey = "-----BEGIN PUBLIC KEY-----\n" +
 		"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDFUkwl6OFLNms3VJQL7rb5bLfi\n" +
 		"/u8Lkyx2WaDFw78XPWAkZMLfc9aTtROuBv8b6PNnUpqzC/lpxWQFIhgfKgxR6lRq\n" +
@@ -325,42 +293,68 @@ func (episode *DaisukiEpisode) getEpisodeInfo(hdsInfo *HDSInfo, cookies []*http.
 		return anirip.Error{Message: "There was an error unmarshalling daisuki metadata", Err: err}
 	}
 
-	// Since we recieve the episode title and filename from the metadata, we'll record it here...
+	// Stores all the info we needed for getting the episodes info
 	episode.Title = strings.SplitN(metaData.TitleStr, " ", 2)[1]
 	episode.FileName = anirip.CleanFileName(episode.FileName + episode.Title) // Updates filename with title that we just scraped
-
-	// Assigns the Caption/Subtitle URL and Video Manifest URL for use when downloading
-	episode.SubtitleURL = metaData.CaptionURL
-	hdsInfo.ManifestURL = metaData.PlayURL
+	episode.SubtitleInfo = TTMLInfo{
+		TTMLUrl: metaData.CaptionURL,
+	}
+	episode.MediaInfo = HDSInfo{
+		ManifestURL: metaData.PlayURL,
+	}
 	return nil
 }
 
+// Downloads entire FLV episodes to our temp directory
+func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
+	// Attempts to dump the FLV of the episode to file
+	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)
+	if err != nil {
+		return err
+	}
+
+	// Finally renames the dumped FLV to an MKV
+	if err := anirip.Rename(tempDir+"\\"+episode.FileName+".flv", tempDir+"\\"+episode.FileName+".mkv", 10); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Gets the filename of the episode for referencing outside of this lib
+func (episode *DaisukiEpisode) GetFileName() string {
+	return episode.FileName
+}
+
 // Calls on AdobeHDS.php to dump the episode and name it
-func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, hdsInfo *HDSInfo) error {
+func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir string) error {
 	episode.Quality = quality // Sets the quality to the passed quality string
 
-	// Gets the path of php and our adobeHDS php file
-	phpPath, err := exec.LookPath("engine\\php\\php.exe")
+	// Gets the path of php and our adobeHDS php fil
+	phpPath, err := filepath.Abs(engineDir + "\\php\\php.exe")
 	if err != nil {
-		return anirip.Error{Message: "Unable to find php.exe in \\engine\\php\\ directory", Err: err}
+		return anirip.Error{Message: "Unable to find php.exe in \\" + engineDir + "\\php\\ directory", Err: err}
 	}
-	adobeHDSPath, err := exec.LookPath("engine\\AdobeHDS.php")
+	adobeHDSPath, err := filepath.Abs(engineDir + "\\AdobeHDS.php")
 	if err != nil {
-		return anirip.Error{Message: "Unable to find adobeHDS in \\engine\\ directory", Err: err}
+		return anirip.Error{Message: "Unable to find adobeHDS in \\" + engineDir + "\\ directory", Err: err}
 	}
 
 	// Executes the dump command and gets the episode
-	_, err = exec.Command(phpPath, adobeHDSPath,
-		"--manifest", hdsInfo.ManifestURL+"&g="+generateGUID(12)+"&hdcore=3.2.0",
-		"--outdir", "temp",
+	cmd := exec.Command(phpPath, adobeHDSPath,
+		"--manifest", episode.MediaInfo.ManifestURL+"&g="+generateGUID(12)+"&hdcore=3.2.0",
 		"--outfile", episode.FileName,
 		"--quality", "high",
 		"--referrer", episode.URL,
-		"--rename", "--delete").Output()
+		"--rename", "--delete")
+	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
+
+	// Executes the command
+	_, err = cmd.Output()
 	if err != nil {
 		// Recursively recalls dempEpisodeFLV if we get an unfinished download
-		episode.dumpEpisodeFLV(quality, hdsInfo)
+		episode.dumpEpisodeFLV(quality, engineDir, tempDir)
 	}
+
 	return nil
 }
 

@@ -1,5 +1,9 @@
-engine/AdobeHDS.php
-engine/php/extras/ssl/openssl.cnf
 engine/php/pharcommand.phar
-resource.syso
 engine/php/phar.phar.bat
+*.php
+*.exe
+*.cnf
+*.syso
+*.dll
+*.lib
+*.cookie

@@ -25,16 +25,25 @@ type DaisukiSeason struct {
 }
 
 type DaisukiEpisode struct {
-	ID          int
-	SubtitleID  int
-	SubtitleURL string
-	Title       string
-	Description string
-	Number      float64
-	Quality     string
-	Path        string
-	URL         string
-	FileName    string
+	ID           int
+	SubtitleID   int
+	Title        string
+	Description  string
+	Number       float64
+	Quality      string
+	Path         string
+	URL          string
+	FileName     string
+	SubtitleInfo TTMLInfo
+	MediaInfo    HDSInfo
+}
+
+type TTMLInfo struct {
+	TTMLUrl string
+}
+
+type HDSInfo struct {
+	ManifestURL string
 }
 
 // Given a show pointer, appends all the seasons/episodes found for the show
@@ -138,4 +147,9 @@ func (season *DaisukiSeason) GetEpisodes() anirip.Episodes {
 		episodes = append(episodes, &season.Episodes[i])
 	}
 	return episodes
+}
+
+// Return the season number that will be used for folder naming
+func (season *DaisukiSeason) GetNumber() int {
+	return season.Number
 }

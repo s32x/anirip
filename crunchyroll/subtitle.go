@@ -99,7 +99,7 @@ type Event struct {
 
 // Entirely downloads subtitles to our temp directory
 // IGNORING offset for now (no reason to trim cr subs)
-func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, cookies []*http.Cookie) error {
+func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
 	err := episode.getSubtitleInfo(subtitles, language, cookies)
@@ -119,7 +119,7 @@ func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	err = episode.dumpSubtitleASS(subtitles)
+	err = episode.dumpSubtitleASS(subtitles, tempDir)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies 
 }
 
 // Dumps the crunchyroll subtitles to file to be muxed into MKV
-func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle) error {
+func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle, tempDir string) error {
 	// Attempts to decrypt the compressed subtitles we recieved
 	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {
@@ -252,7 +252,7 @@ func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle) error {
 
 	// Writes the ASS subtitles to a file in our temp folder (with utf-8-sig encoding)
 	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
-	err = ioutil.WriteFile("temp\\"+episode.FileName+".ass", subtitlesBytes, 0644)
+	err = ioutil.WriteFile(tempDir+"\\"+episode.FileName+".ass", subtitlesBytes, 0644)
 	if err != nil {
 		return anirip.Error{Message: "There was an error while writing the subtitles to file", Err: err}
 	}

@@ -3,7 +3,7 @@ package anirip
 import "net/http"
 
 type Session interface {
-	Login(string, string) error
+	Login(string, string, string) error
 	GetCookies() []*http.Cookie
 }
 
@@ -16,13 +16,15 @@ type Show interface {
 type Seasons []Season
 
 type Season interface {
+	GetNumber() int
 	GetEpisodes() Episodes
 }
 
 type Episodes []Episode
 
 type Episode interface {
-	DownloadEpisode(string, []*http.Cookie) error
-	DownloadSubtitles(string, int, []*http.Cookie) error
+	GetEpisodeInfo(string, []*http.Cookie) error
+	DownloadEpisode(string, string, string, []*http.Cookie) error
+	DownloadSubtitles(string, int, string, []*http.Cookie) error
 	GetFileName() string
 }

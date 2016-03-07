@@ -309,8 +309,8 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 // Downloads entire FLV episodes to our temp directory
 func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
 	// Remove stale temp files to avoid conflcts in func
-	os.Remove(tempDir + "\\" + episode.FileName + ".flv")
-	os.Remove(tempDir + "\\" + episode.FileName + ".mkv")
+	os.Remove(tempDir + "\\incomplete.video.flv")
+	os.Remove(tempDir + "\\incomplete.video.mkv")
 
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)
@@ -319,7 +319,7 @@ func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDi
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename(tempDir+"\\"+episode.FileName+".flv", tempDir+"\\"+episode.FileName+".mkv", 10); err != nil {
+	if err := anirip.Rename(tempDir+"\\incomplete.video.flv", tempDir+"\\"+episode.FileName+".mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -347,7 +347,7 @@ func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir
 	// Executes the dump command and gets the episode
 	cmd := exec.Command(phpPath, adobeHDSPath,
 		"--manifest", episode.MediaInfo.ManifestURL+"&g="+generateGUID(12)+"&hdcore=3.2.0",
-		"--outfile", episode.FileName,
+		"--outfile", "incomplete.video",
 		"--quality", "high",
 		"--referrer", episode.URL,
 		"--rename", "--delete")

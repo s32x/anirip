@@ -167,7 +167,7 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 	}
 	xmlString := string(subtitleInfoBody)
 
-	// Return if we see that the show has embedded/hardcoded subtitles
+	// If the XML explicity states that there is NO MEDIA, return empty language string
 	if strings.Contains("<media_id>None</media_id>", xmlString) {
 		return "", nil
 	}
@@ -195,7 +195,9 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 			return "eng", nil
 		}
 	}
-	return "", anirip.Error{Message: "Unable to find any subtitles we were looking for", Err: nil}
+
+	// Again, if there are no subs found after a succesfull parse, they are either hardcoded or dubbed
+	return "", nil
 }
 
 // Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode

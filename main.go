@@ -25,12 +25,6 @@ const (
 )
 
 func main() {
-	// Intro header
-	fmt.Printf("-------------------------------------------------------------\n")
-	fmt.Printf("------------------- ANIRip v1.1.2 by Viz_ -------------------\n")
-	fmt.Printf("-------------------------------------------------------------\n\n")
-	fmt.Printf("- Currently supports Crunchyroll & Daisuki show URLs\n\n")
-
 	// Asks the user for their desired show URLs delimited by spaces
 	showURLs := ""
 	getStandardUserInput("Enter a list of Show URLs (delimited by spaces) : ", &showURLs)
@@ -188,6 +182,30 @@ func main() {
 		fmt.Printf("Completed processing episodes for " + show.GetTitle() + "\n\n")
 	}
 	pause()
+}
+
+func init() {
+	// Intro header
+	fmt.Printf("-------------------------------------------------------------\n")
+	fmt.Printf("------------------- ANIRip v1.1.2 by Viz_ -------------------\n")
+	fmt.Printf("-------------------------------------------------------------\n\n")
+	fmt.Printf("- Currently supports Crunchyroll & Daisuki show URLs\n\n")
+
+	// Checks for the existance of our required output folders and creates them if they don't
+	_, err := os.Stat(outputDir)
+	if err != nil {
+		os.Mkdir(outputDir, 0777)
+	}
+
+	_, err = os.Stat(tempDir)
+	if err != nil {
+		os.Mkdir(tempDir, 0777)
+	}
+
+	_, err = os.Stat(cookieDir)
+	if err != nil {
+		os.Mkdir(cookieDir, 0777)
+	}
 }
 
 func login(session anirip.Session, username, password, cookieDir string) {

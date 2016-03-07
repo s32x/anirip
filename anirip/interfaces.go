@@ -25,6 +25,6 @@ type Episodes []Episode
 type Episode interface {
 	GetEpisodeInfo(string, []*http.Cookie) error
 	DownloadEpisode(string, string, string, []*http.Cookie) error
-	DownloadSubtitles(string, int, string, []*http.Cookie) error
+	DownloadSubtitles(string, int, string, []*http.Cookie) (string, error)
 	GetFileName() string
 }

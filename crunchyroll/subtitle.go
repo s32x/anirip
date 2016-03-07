@@ -100,37 +100,37 @@ type Event struct {
 
 // Entirely downloads subtitles to our temp directory
 // IGNORING offset for now (no reason to trim cr subs)
-func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
+func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
 	// Remove stale temp file to avoid conflcts in func
 	os.Remove(tempDir + "\\" + episode.FileName + ".ass")
 
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
-	err := episode.getSubtitleInfo(subtitles, language, cookies)
+	subtitleLang, err := episode.getSubtitleInfo(subtitles, language, cookies)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// If we get back a subtitle that was nil (no ID), there are no subs available
 	if episode.SubtitleID == 0 {
-		return nil
+		return "", nil
 	}
 
 	// Places the new subtitle object with JUST INFO into the episode and gets the sub data
-	err = episode.getSubtitleData(subtitles, cookies)
-	if err != nil {
-		return err
+	if err = episode.getSubtitleData(subtitles, cookies); err != nil {
+		return "", err
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	err = episode.dumpSubtitleASS(subtitles, tempDir)
-	if err != nil {
-		return err
+	if err = episode.dumpSubtitleASS(subtitles, tempDir); err != nil {
+		return "", err
 	}
-	return nil
+
+	// Defaulting to english for now...
+	return subtitleLang, nil
 }
 
-func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) error {
+func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) (string, error) {
 	// Formdata to indicate the source page
 	formData := url.Values{
 		"current_page": {episode.URL},
@@ -157,25 +157,25 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 		subtitleInfoReqHeaders,
 		cookies)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Reads the bytes from the recieved subtitle info xml response body
 	subtitleInfoBody, err := ioutil.ReadAll(subtitleInfoResponse.Body)
 	if err != nil {
-		return anirip.Error{Message: "There was an error reading the xml response", Err: err}
+		return "", anirip.Error{Message: "There was an error reading the xml response", Err: err}
 	}
 	xmlString := string(subtitleInfoBody)
 
 	// Return if we see that the show has embedded/hardcoded subtitles
 	if strings.Contains("<media_id>None</media_id>", xmlString) {
-		return anirip.Error{Message: "This episode has embedded subtitles", Err: nil}
+		return "", nil
 	}
 
 	// Parses the xml into our results object
 	subListResults := SubListResults{}
 	if err = xml.Unmarshal(subtitleInfoBody, &subListResults); err != nil {
-		return anirip.Error{Message: "There was an error while reading subtitle information", Err: nil}
+		return "", anirip.Error{Message: "There was an error while reading subtitle information", Err: nil}
 	}
 
 	// Finds the subtitle ID of the language we want
@@ -183,7 +183,7 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 		if strings.Contains(subListResults.Subtitles[i].Title, language) {
 			subtitles = &subListResults.Subtitles[i]
 			episode.SubtitleID = subtitles.ID
-			return nil
+			return "eng", nil
 		}
 	}
 
@@ -192,9 +192,10 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 		if strings.Contains(subListResults.Subtitles[i].Title, "English") {
 			subtitles = &subListResults.Subtitles[i]
 			episode.SubtitleID = subtitles.ID
+			return "eng", nil
 		}
 	}
-	return anirip.Error{Message: "Unable to find any subtitles we were looking for", Err: nil}
+	return "", anirip.Error{Message: "Unable to find any subtitles we were looking for", Err: nil}
 }
 
 // Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode

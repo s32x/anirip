@@ -49,27 +49,29 @@ type Event struct {
 }
 
 // Entirely downloads subtitles to our temp directory
-func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
+func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
 	// Remove stale temp file to avoid conflcts in func
 	os.Remove(tempDir + "\\" + episode.FileName + ".ass")
 
 	// Since we already have the subtitle info lets just go and download the subs
-	// If we get back a subtitle that was nil (no ID), there are no subs available
+	// If we get back a subtitle that was nil (no TTML Url), there are no subs available
 	if episode.SubtitleInfo.TTMLUrl == "" {
-		return nil
+		return "", nil
 	}
 
-	// Reaches out to the xml page and gets the subtitles
+	// Reaches out to the xml page and gets all the available subtitles
 	subtitles := new(TT)
 	if err := episode.getSubtitles(subtitles, cookies); err != nil {
-		return err
+		return "", err
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
 	if err := episode.dumpSubtitleASS(language, offset, subtitles, tempDir); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	// Assuming a subtitle language of english
+	return "eng", nil
 }
 
 // Gets the subtitles xml from daisuki, parses and popuulates XMTT param

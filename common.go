@@ -134,16 +134,27 @@ func mergeSubtitles(fileName, audioLang, subtitleLang, engineDir, tempDir string
 	}
 
 	// Creates the command which we will use to merge our subtitles and video
-	cmd := exec.Command(path,
-		"-i", "unmerged."+fileName+".mkv",
-		"-f", "ass",
-		"-i", fileName+".ass",
-		"-c:v", "copy",
-		"-c:a", "copy",
-		"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLang
-		"-metadata:s:s:0", "language="+subtitleLang, // sets subtitle language to subtitleLang
-		"-disposition:s:0", "default",
-		"-y", fileName+".mkv")
+	cmd := new(exec.Cmd)
+	if subtitleLang == "" {
+		cmd = exec.Command(path,
+			"-i", "unmerged."+fileName+".mkv",
+			"-c:v", "copy",
+			"-c:a", "copy",
+			"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLan
+			"-disposition:s:0", "default",
+			"-y", fileName+".mkv")
+	} else {
+		cmd = exec.Command(path,
+			"-i", "unmerged."+fileName+".mkv",
+			"-f", "ass",
+			"-i", fileName+".ass",
+			"-c:v", "copy",
+			"-c:a", "copy",
+			"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLang
+			"-metadata:s:s:0", "language="+subtitleLang, // sets subtitle language to subtitleLang
+			"-disposition:s:0", "default",
+			"-y", fileName+".mkv")
+	}
 	cmd.Dir = tempDir // Sets working directory to temp
 
 	// Executes the command

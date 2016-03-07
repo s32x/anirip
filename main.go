@@ -108,7 +108,7 @@ func main() {
 				// Checks to see if the episode already exists, in which case we continue to the next
 				_, err = os.Stat(tempDir + "\\" + show.GetTitle() + "\\" + seasonNameArray[season.GetNumber()] + "\\" + episode.GetFileName() + ".mkv")
 				if err == nil {
-					fmt.Printf("The episode has already been downloaded..." + "\n\n")
+					fmt.Printf(episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n\n")
 					continue
 				}
 
@@ -154,14 +154,15 @@ func main() {
 				// Downloads the subtitles to .ass format and
 				// offsets their times by the passed provided interval
 				fmt.Printf("Downloading subtitles with a total offset of " + strconv.Itoa(subOffset) + "ms...\n")
-				if err := episode.DownloadSubtitles("English", subOffset, tempDir, session.GetCookies()); err != nil {
+				subtitleLang, err := episode.DownloadSubtitles("English", subOffset, tempDir, session.GetCookies())
+				if err != nil {
 					fmt.Printf(err.Error() + "\n\n")
 					continue
 				}
 
 				// Attempts to merge the downloaded subtitles into the video stream
 				fmt.Printf("Merging subtitles into mkv container...\n")
-				if err := mergeSubtitles(episode.GetFileName(), "jpn", "eng", engineDir, tempDir); err != nil {
+				if err := mergeSubtitles(episode.GetFileName(), "jpn", subtitleLang, engineDir, tempDir); err != nil {
 					fmt.Printf(err.Error() + "\n\n")
 					continue
 				}

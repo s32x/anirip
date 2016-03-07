@@ -1,6 +1,7 @@
 package crunchyroll
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,6 +44,17 @@ type RTMPInfo struct {
 	File   string
 }
 
+type ShowMetaData struct {
+	Class          string `json:"class"`
+	SeriesID       string `json:"series_id"`
+	URL            string `json:"url"`
+	Name           string `json:"name"`
+	MediaType      string `json:"media_type"`
+	LandscapeImage string `json:"landscape_image"`
+	PortraitImage  string `json:"portrait_image"`
+	Description    string `json:"description"`
+}
+
 // Given a show pointer, appends all the seasons/episodes found for the show
 func (show *CrunchyrollShow) ScrapeEpisodes(showURL string, cookies []*http.Cookie) error {
 	// Gets the HTML of the show page
@@ -61,16 +73,19 @@ func (show *CrunchyrollShow) ScrapeEpisodes(showURL string, cookies []*http.Cook
 		return anirip.Error{Message: "There was an error while accessing the show page", Err: err}
 	}
 
+	// Scrapes the show metadata from the show page
+	showMetaDataJSON := showDoc.Find("script#liftigniter-metadata").First().Text()
+
+	// Parses the metadata json to a ShowMetaData object
+	showMetaData := new(ShowMetaData)
+	if err := json.Unmarshal([]byte(showMetaDataJSON), showMetaData); err != nil {
+		return anirip.Error{Message: "There was an error while parsing show metadata", Err: err}
+	}
+
 	// Sets Title, and Path and URL on our show object
-	if show.Title == "" {
-		show.Title = showDoc.Find("h1.ellipsis span").First().Text() // Scrapes the show title fromt he season body if it wasn't set by a search
-	}
-	if show.URL == "" {
-		show.URL = showURL
-	}
-	if show.Path == "" {
-		show.Path = strings.Replace(show.URL, "http://www.crunchyroll.com", "", 1) // Removes the host so we have just the path
-	}
+	show.Title = showMetaData.Name
+	show.URL = showMetaData.URL
+	show.Path = strings.Replace(show.URL, "http://www.crunchyroll.com", "", 1) // Removes the host so we have just the path
 
 	// Searches first for the search div
 	showDoc.Find("ul.list-of-seasons.cf").Each(func(i int, seasonList *goquery.Selection) {

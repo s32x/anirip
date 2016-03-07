@@ -15,7 +15,7 @@ import (
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
-type MetaData struct {
+type EpisodeMetaData struct {
 	NoShow           string `json:"noShow"`
 	Class            string `json:"class"`
 	MediaID          string `json:"media_id"`
@@ -59,7 +59,7 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 	episodeMetaDataJSON := episodeDoc.Find("script#liftigniter-metadata").First().Text()
 
 	// Parses the metadata json to a MetaData object
-	episodeMetaData := new(MetaData)
+	episodeMetaData := new(EpisodeMetaData)
 	if err := json.Unmarshal([]byte(episodeMetaDataJSON), episodeMetaData); err != nil {
 		return anirip.Error{Message: "There was an error while parsing episode metadata", Err: err}
 	}

@@ -15,6 +15,12 @@ import (
 
 // Trims the first couple seconds off of the video to remove any logos
 func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir string) error {
+	// Removes a stale temp files to avoid conflcts in func
+	os.Remove(tempDir + "\\" + "untrimmed." + fileName + ".mkv")
+	os.Remove(tempDir + "\\" + "prefix." + fileName + ".mkv")
+	os.Remove(tempDir + "\\" + "video." + fileName + ".mkv")
+	os.Remove(tempDir + "\\" + "list." + fileName + ".txt")
+
 	// Recursively retries rename to temp filename before execution
 	if err := anirip.Rename(tempDir+"\\"+fileName+".mkv", tempDir+"\\"+"untrimmed."+fileName+".mkv", 10); err != nil {
 		return err
@@ -103,7 +109,7 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 		return anirip.Error{Message: "There was an error while merging video and prefix", Err: err}
 	}
 
-	// Removes the temporary files we created as they are no longer neede
+	// Removes the temporary files we created as they are no longer needed
 	os.Remove(tempDir + "\\" + "untrimmed." + fileName + ".mkv")
 	os.Remove(tempDir + "\\" + "prefix." + fileName + ".mkv")
 	os.Remove(tempDir + "\\" + "video." + fileName + ".mkv")
@@ -113,6 +119,10 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 
 // Merges a VIDEO.mkv and a VIDEO.ass
 func mergeSubtitles(fileName, audioLang, subtitleLang, engineDir, tempDir string) error {
+	// Removes a stale temp files to avoid conflcts in func
+	os.Remove(tempDir + "\\" + fileName + ".ass")
+	os.Remove(tempDir + "\\" + "unmerged." + fileName + ".mkv")
+
 	// Recursively retries rename to temp filename before execution
 	if err := anirip.Rename(tempDir+"\\"+fileName+".mkv", tempDir+"\\"+"unmerged."+fileName+".mkv", 10); err != nil {
 		return err
@@ -180,6 +190,9 @@ func getVideoLength(fileName, engineDir, tempDir string) (int, error) {
 
 // Cleans up the mkv, optimizing it for playback
 func cleanMKV(fileName, engineDir, tempDir string) error {
+	// Removes a stale temp file to avoid conflcts in func
+	os.Remove(tempDir + "\\" + "dirty." + fileName + ".mkv")
+
 	// Recursively retries rename to temp filename before execution
 	if err := anirip.Rename(tempDir+"\\"+fileName+".mkv", tempDir+"\\"+"dirty."+fileName+".mkv", 10); err != nil {
 		return err

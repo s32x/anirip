@@ -14,6 +14,7 @@ import (
 	mrand "math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -307,6 +308,10 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
+	// Remove stale temp files to avoid conflcts in func
+	os.Remove(tempDir + "\\" + episode.FileName + ".flv")
+	os.Remove(tempDir + "\\" + episode.FileName + ".mkv")
+
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)
 	if err != nil {

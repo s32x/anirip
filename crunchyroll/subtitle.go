@@ -13,6 +13,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
@@ -100,6 +101,9 @@ type Event struct {
 // Entirely downloads subtitles to our temp directory
 // IGNORING offset for now (no reason to trim cr subs)
 func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
+	// Remove stale temp file to avoid conflcts in func
+	os.Remove(tempDir + "\\" + episode.FileName + ".ass")
+
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
 	err := episode.getSubtitleInfo(subtitles, language, cookies)

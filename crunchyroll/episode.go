@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -147,6 +148,10 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir string, cookies []*http.Cookie) error {
+	// Remove stale temp files to avoid conflcts in func
+	os.Remove(tempDir + "\\" + episode.FileName + ".flv")
+	os.Remove(tempDir + "\\" + episode.FileName + ".mkv")
+
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(engineDir, tempDir)
 	if err != nil {

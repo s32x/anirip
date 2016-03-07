@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,9 @@ type Event struct {
 
 // Entirely downloads subtitles to our temp directory
 func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) error {
+	// Remove stale temp file to avoid conflcts in func
+	os.Remove(tempDir + "\\" + episode.FileName + ".ass")
+
 	// Since we already have the subtitle info lets just go and download the subs
 	// If we get back a subtitle that was nil (no ID), there are no subs available
 	if episode.SubtitleInfo.TTMLUrl == "" {

@@ -308,9 +308,8 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
-	// Remove stale temp files to avoid conflcts in func
+	// Remove stale temp file to avoid conflcts with CLI
 	os.Remove(tempDir + "\\incomplete.video.flv")
-	os.Remove(tempDir + "\\incomplete.video.mkv")
 
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)

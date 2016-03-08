@@ -148,9 +148,8 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir string, cookies []*http.Cookie) error {
-	// Remove stale temp files to avoid conflcts in func
+	// Remove stale temp file to avoid conflcts with CLI
 	os.Remove(tempDir + "\\incomplete.video.flv")
-	os.Remove(tempDir + "\\incomplete.video.mkv")
 
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(engineDir, tempDir)

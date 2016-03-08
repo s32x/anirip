@@ -70,6 +70,14 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 	gapOffset := float64(keyFrameGap) / 1000
 	gapOffsetString := strconv.FormatFloat(gapOffset, 'f', 3, 64)
 
+	// We need to ask ffprobe explicitly for an exact framerate because ffmpeg's auto
+	// frame reader thinks 30.30 frames is 30.3, resulting in frame jumps at end of prefix
+	frameRate, err := getVideoFrameRate("video."+fileName+".mkv", engineDir, tempDir)
+	if err != nil {
+		return err
+	}
+	frameRateString := strconv.FormatFloat(frameRate, 'f', 2, 64)
+
 	// Executes the fine intro trim and waits for the command to finish
 	cmd = exec.Command(ffmpeg,
 		"-ss", trueOffsetString, // Exact timestamp of the ad endings
@@ -77,7 +85,7 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 		"-t", gapOffsetString, // The exact time between ad ending and frame next keyframe
 		"-crf", "5",
 		"-vsync", "1",
-		"-r", "24",
+		"-r", frameRateString,
 		"-c:a", "aac", "-y", // Use AAC as audio codec to match video.mkv
 		"prefix."+fileName+".mkv")
 	cmd.Dir = tempDir // Sets working directory to temp
@@ -195,6 +203,42 @@ func getVideoLength(fileName, engineDir, tempDir string) (int, error) {
 		return 0, anirip.Error{Message: "There was an error parsing the length of " + fileName, Err: err}
 	}
 	return int(length * 1000), nil
+}
+
+// Uses ffprobe to get the exact framerate of the video and returns it as a float64
+func getVideoFrameRate(fileName, engineDir, tempDir string) (float64, error) {
+	// Gets the ffprobe path which we will use to figure out the video length
+	ffprobe, err := filepath.Abs(engineDir + "\\ffprobe.exe")
+	if err != nil {
+		return 0, anirip.Error{Message: "Unable to find ffprobe.exe in \\" + engineDir + "\\ directory", Err: err}
+	}
+
+	// Asks for the length of our video
+	cmd := exec.Command(ffprobe,
+		"-v", "error",
+		"-select_streams", "v:0",
+		"-show_entries", "stream=avg_frame_rate",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		fileName)
+	cmd.Dir = tempDir // Sets working directory to temp
+
+	// Executes the command
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, anirip.Error{Message: "There was an error measuring " + fileName, Err: err}
+	}
+
+	// Output will be represented as a fraction which needs to be solved
+	frameRateArray := strings.Split(strings.Replace(string(output), "\r\n", "", -1), "/")
+	numerator, err := strconv.ParseFloat(frameRateArray[0], 64)
+	if err != nil {
+		return 0, anirip.Error{Message: "There was an error parsing the numerator of our framerate for " + fileName, Err: err}
+	}
+	denominator, err := strconv.ParseFloat(frameRateArray[1], 64)
+	if err != nil {
+		return 0, anirip.Error{Message: "There was an error parsing the denominator of our framerate for " + fileName, Err: err}
+	}
+	return numerator / denominator, nil
 }
 
 // Cleans up the mkv, optimizing it for playback

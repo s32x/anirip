@@ -139,8 +139,7 @@ func mergeSubtitles(fileName, audioLang, subtitleLang, engineDir, tempDir string
 			"-i", "unmerged."+fileName+".mkv",
 			"-c:v", "copy",
 			"-c:a", "copy",
-			"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLan
-			"-disposition:s:0", "default",
+			"-metadata:s:a:0", "language="+audioLang, // sets audio language to passed audioLang
 			"-y", fileName+".mkv")
 	} else {
 		cmd = exec.Command(path,

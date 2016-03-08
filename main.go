@@ -18,10 +18,10 @@ const (
 	daisukiIntroLength = 5040
 	aniplexIntroLength = 6747
 	sunriseIntroLength = 8227
-	cookieDir          = "cookies"
-	engineDir          = "engine"
-	tempDir            = "temp"
-	outputDir          = "output"
+	engineDir          = "engine"   // Where our clis are required to be
+	cookieDir          = "cookies"  // Where we will store the cookies
+	tempDir            = "temp"     // Where our temporary video/audio/subtitle streams will be held
+	outputDir          = "finished" // Where our finalized show directories will be held
 )
 
 func main() {
@@ -75,7 +75,8 @@ func main() {
 		fmt.Printf("\n")
 
 		// Sets up an array that we will use for season directory naming
-		seasonNameArray := []string{"Specials", // Season num 0
+		seasonNameArray := []string{
+			"Specials",   // Season num 0
 			"Season One", // Season num 1...
 			"Season Two",
 			"Season Three",
@@ -85,7 +86,8 @@ func main() {
 			"Season Seven",
 			"Season Eight",
 			"Season Nine",
-			"Season Ten"}
+			"Season Ten",
+		}
 
 		// Creates a folder in the temporary directory that will store the seasons
 		os.Mkdir(tempDir+"\\"+show.GetTitle(), 0777)

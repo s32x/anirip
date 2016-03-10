@@ -165,17 +165,16 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 	if err != nil {
 		return "", anirip.Error{Message: "There was an error reading the xml response", Err: err}
 	}
-	xmlString := string(subtitleInfoBody)
 
 	// If the XML explicity states that there is NO MEDIA, return empty language string
-	if strings.Contains("<media_id>None</media_id>", xmlString) {
+	if strings.Contains("<media_id>None</media_id>", string(subtitleInfoBody)) {
 		return "", nil
 	}
 
 	// Parses the xml into our results object
 	subListResults := SubListResults{}
 	if err = xml.Unmarshal(subtitleInfoBody, &subListResults); err != nil {
-		return "", anirip.Error{Message: "There was an error while reading subtitle information", Err: nil}
+		return "", anirip.Error{Message: "There was an error while reading subtitle information", Err: err}
 	}
 
 	// Finds the subtitle ID of the language we want

@@ -46,8 +46,8 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 	cmd := exec.Command(ffmpeg,
 		"-ss", keyFrameOffsetString,
 		"-i", "untrimmed."+fileName+".mkv",
-		"-c:v", "copy",
-		"-c:a", "copy", "-y",
+		"-c", "copy",
+		"-avoid_negative_ts", "1", "-y",
 		"video."+fileName+".mkv")
 	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
 
@@ -62,7 +62,7 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 	if err != nil {
 		return err
 	}
-	keyFrameGap := (untrimmedLength - videoLength) - adLength - 0040
+	keyFrameGap := (untrimmedLength - videoLength) - adLength //- 0040
 
 	// Calculates the intro offsets we will use and represents it as a string
 	trueOffset := float64(adLength) / 1000
@@ -76,7 +76,7 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 	if err != nil {
 		return err
 	}
-	frameRateString := strconv.FormatFloat(frameRate, 'f', 2, 64)
+	frameRateString := strconv.FormatFloat(frameRate, 'f', 8, 64)
 
 	// Executes the fine intro trim and waits for the command to finish
 	cmd = exec.Command(ffmpeg,
@@ -106,8 +106,7 @@ func trimMKV(fileName string, adLength, estKeyFrame int, engineDir, tempDir stri
 	cmd = exec.Command(ffmpeg,
 		"-f", "concat",
 		"-i", "list."+fileName+".txt",
-		"-c:v", "copy",
-		"-c:a", "copy", "-y",
+		"-c", "copy", "-y",
 		fileName+".mkv")
 	cmd.Dir = tempDir // Sets working directory to temp
 

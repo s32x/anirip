@@ -51,7 +51,7 @@ type Event struct {
 // Entirely downloads subtitles to our temp directory
 func (episode *DaisukiEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
 	// Remove stale temp file to avoid conflcts in func
-	os.Remove(tempDir + "\\" + episode.FileName + ".ass")
+	os.Remove(tempDir + "\\subtitles.episode.ass")
 
 	// Since we already have the subtitle info lets just go and download the subs
 	// If we get back a subtitle that was nil (no TTML Url), there are no subs available
@@ -114,7 +114,7 @@ func (episode *DaisukiEpisode) dumpSubtitleASS(language string, offset int, subt
 
 	// Writes the ASS subtitles to a file in our temp folder (with utf-8-sig encoding)
 	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
-	err = ioutil.WriteFile(tempDir+"\\"+episode.FileName+".ass", subtitlesBytes, 0644)
+	err = ioutil.WriteFile(tempDir+"\\subtitles.episode.ass", subtitlesBytes, 0644)
 	if err != nil {
 		return anirip.Error{Message: "There was an error while writing the subtitles to file", Err: err}
 	}

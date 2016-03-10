@@ -121,7 +121,7 @@ func main() {
 				if strings.ToLower(daisukiIntroTrim) == "y" {
 					subOffset = subOffset + daisukiIntroLength
 					fmt.Printf("Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
-					if err := trimMKV(episode.GetFileName(), daisukiIntroLength, 6200, engineDir, tempDir); err != nil {
+					if err := trimMKV(daisukiIntroLength, 6200, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}
@@ -131,7 +131,7 @@ func main() {
 				if strings.ToLower(aniplexIntroTrim) == "y" {
 					subOffset = subOffset + aniplexIntroLength
 					fmt.Printf("Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
-					if err := trimMKV(episode.GetFileName(), aniplexIntroLength, 9000, engineDir, tempDir); err != nil {
+					if err := trimMKV(aniplexIntroLength, 9000, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}
@@ -141,7 +141,7 @@ func main() {
 				if strings.ToLower(sunriseIntroTrim) == "y" {
 					subOffset = subOffset + sunriseIntroLength
 					fmt.Printf("Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
-					if err := trimMKV(episode.GetFileName(), sunriseIntroLength, 10000, engineDir, tempDir); err != nil {
+					if err := trimMKV(sunriseIntroLength, 10000, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}
@@ -158,20 +158,20 @@ func main() {
 
 				// Attempts to merge the downloaded subtitles into the video stream
 				fmt.Printf("Merging subtitles into mkv container...\n")
-				if err := mergeSubtitles(episode.GetFileName(), "jpn", subtitleLang, engineDir, tempDir); err != nil {
+				if err := mergeSubtitles("jpn", subtitleLang, engineDir, tempDir); err != nil {
 					fmt.Printf(err.Error() + "\n\n")
 					continue
 				}
 
 				// Cleans and optimizes the final MKV
 				fmt.Printf("Cleaning and optimizing mkv...\n")
-				if err := cleanMKV(episode.GetFileName(), engineDir, tempDir); err != nil {
+				if err := cleanMKV(engineDir, tempDir); err != nil {
 					fmt.Printf(err.Error() + "\n\n")
 					continue
 				}
 
 				// Moves the episode to the appropriate directory
-				if err := anirip.Rename(tempDir+"\\"+episode.GetFileName()+".mkv",
+				if err := anirip.Rename(tempDir+"\\episode.mkv",
 					tempDir+"\\"+show.GetTitle()+"\\"+seasonNameArray[season.GetNumber()]+"\\"+episode.GetFileName()+".mkv", 10); err != nil {
 					fmt.Printf(err.Error() + "\n\n")
 				}

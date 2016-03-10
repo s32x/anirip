@@ -149,7 +149,7 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 // Downloads entire FLV episodes to our temp directory
 func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir string, cookies []*http.Cookie) error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + "\\incomplete.video.flv")
+	os.Remove(tempDir + "\\incomplete.episode.flv")
 
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(engineDir, tempDir)
@@ -158,7 +158,7 @@ func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir s
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename(tempDir+"\\incomplete.video.flv", tempDir+"\\"+episode.FileName+".mkv", 10); err != nil {
+	if err := anirip.Rename(tempDir+"\\incomplete.episode.flv", tempDir+"\\episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -186,7 +186,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string) err
 		"-m", "10",
 		"-p", episode.URL,
 		"-y", episode.MediaInfo.File,
-		"-o", "incomplete.video.flv")
+		"-o", "incomplete.episode.flv")
 	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
 
 	// Append retry param if the file already exists

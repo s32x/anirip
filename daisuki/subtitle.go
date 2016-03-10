@@ -97,9 +97,13 @@ func (episode *DaisukiEpisode) getSubtitles(subtitles *TT, cookies []*http.Cooki
 		return anirip.Error{Message: "There was an error reading the search response", Err: err}
 	}
 
+	// replaces ampersands in subs with the appropriate xml syntax
+	// because it appears daisuki won't respect XML 1.0 formatting
+	strings.Replace(string(subtitleXML), "&", "&amp;", -1)
+
 	// Parses the xml into our subtitles object
 	if err = xml.Unmarshal(subtitleXML, subtitles); err != nil {
-		return anirip.Error{Message: "There was an error while reading subtitle information", Err: nil}
+		return anirip.Error{Message: "There was an error while reading subtitle information", Err: err}
 	}
 	return nil
 }

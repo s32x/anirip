@@ -71,7 +71,6 @@ func main() {
 			getStandardUserInput("Do you want to trim an Aniplex intro? [Y/N] : ", &aniplexIntroTrim)
 			getStandardUserInput("Do you want to trim a Sunrise intro? [Y/N] : ", &sunriseIntroTrim)
 		}
-
 		fmt.Printf("\n")
 
 		// Sets up an array that we will use for season directory naming

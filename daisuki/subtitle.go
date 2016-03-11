@@ -184,8 +184,8 @@ func formatSubtitles(language string, offset int, subtitles *TT) (string, error)
 	for _, subs := range subtitles.Body.Subtitles {
 		if strings.ToLower(subs.Language) == strings.ToLower(language) {
 			for _, event := range subs.Events {
-				beginTime, _ := shiftTime(event.Begin, offset)
-				endTime, _ := shiftTime(event.End, offset)
+				beginTime, _ := anirip.ShiftTime(event.Begin, offset)
+				endTime, _ := anirip.ShiftTime(event.End, offset)
 				events = events + "Dialogue: 0," +
 					beginTime + "," +
 					endTime + "," +
@@ -202,26 +202,4 @@ func formatSubtitles(language string, offset int, subtitles *TT) (string, error)
 
 	// Returns the full subtitles as an ASS string representation
 	return header + styles + events, nil
-}
-
-// Shifts the subtitle time to account for the passed millisecond sub offset
-func shiftTime(subTime string, offset int) (string, error) {
-	// Sets the parsing format to accept a time like this
-	assFormat := "15:04:05.999999"
-
-	// Parses the passed subtitle time
-	tm, err := time.Parse(assFormat, subTime)
-	if err != nil {
-		return "", anirip.Error{Message: "There was an error parsing subtitle time", Err: err}
-	}
-
-	// Parses the offset to a duration that will be subtracted from the parsed sub time
-	offsetDuration, err := time.ParseDuration("-" + strconv.Itoa(offset) + "ms")
-	if err != nil {
-		return "", anirip.Error{Message: "There was an error parsing subtitle time", Err: err}
-	}
-	tm = tm.Add(offsetDuration)
-
-	// returns the new shifted time
-	return tm.Format("15:04:05.00"), nil
 }

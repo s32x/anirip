@@ -122,7 +122,7 @@ func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	if err = episode.dumpSubtitleASS(subtitles, tempDir); err != nil {
+	if err = episode.dumpSubtitleASS(offset, subtitles, tempDir); err != nil {
 		return "", err
 	}
 
@@ -243,7 +243,7 @@ func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies 
 }
 
 // Dumps the crunchyroll subtitles to file to be muxed into MKV
-func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle, tempDir string) error {
+func (episode *CrunchyrollEpisode) dumpSubtitleASS(offset int, subtitles *Subtitle, tempDir string) error {
 	// Attempts to decrypt the compressed subtitles we recieved
 	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {
@@ -251,7 +251,7 @@ func (episode *CrunchyrollEpisode) dumpSubtitleASS(subtitles *Subtitle, tempDir 
 	}
 
 	// Attempts to format the subtitles for ASS
-	formattedSubtitles, err := formatSubtitles(decryptedSubtitles)
+	formattedSubtitles, err := formatSubtitles(offset, decryptedSubtitles)
 	if err != nil || formattedSubtitles == "" {
 		return err
 	}
@@ -302,7 +302,7 @@ func decryptSubtitles(subtitle *Subtitle) (string, error) {
 	return subOutput.String(), nil
 }
 
-func formatSubtitles(subString string) (string, error) {
+func formatSubtitles(offset int, subString string) (string, error) {
 	subScript := SubtitleScript{}
 
 	// Parses the xml into our results object
@@ -347,9 +347,11 @@ func formatSubtitles(subString string) (string, error) {
 	}
 
 	for _, event := range eventArray {
+		beginTime, _ := anirip.ShiftTime(event.Start, offset)
+		endTime, _ := anirip.ShiftTime(event.End, offset)
 		events = events + "Dialogue: 0," +
-			event.Start + "," +
-			event.End + "," +
+			beginTime + "," +
+			endTime + "," +
 			event.Style + "," +
 			event.Name + "," +
 			event.MarginLeft + "," +

@@ -120,7 +120,7 @@ func main() {
 				if strings.ToLower(daisukiIntroTrim) == "y" {
 					subOffset = subOffset + daisukiIntroLength
 					fmt.Printf("Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
-					if err := trimMKV(daisukiIntroLength, 6200, engineDir, tempDir); err != nil {
+					if err := trimMKV(daisukiIntroLength, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}
@@ -130,7 +130,7 @@ func main() {
 				if strings.ToLower(aniplexIntroTrim) == "y" {
 					subOffset = subOffset + aniplexIntroLength
 					fmt.Printf("Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
-					if err := trimMKV(aniplexIntroLength, 9000, engineDir, tempDir); err != nil {
+					if err := trimMKV(aniplexIntroLength, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}
@@ -140,7 +140,7 @@ func main() {
 				if strings.ToLower(sunriseIntroTrim) == "y" {
 					subOffset = subOffset + sunriseIntroLength
 					fmt.Printf("Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
-					if err := trimMKV(sunriseIntroLength, 10000, engineDir, tempDir); err != nil {
+					if err := trimMKV(sunriseIntroLength, engineDir, tempDir); err != nil {
 						fmt.Printf(err.Error() + "\n\n")
 						continue
 					}

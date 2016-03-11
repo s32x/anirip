@@ -14,11 +14,12 @@ import (
 )
 
 // Trims the first couple seconds off of the video to remove any logos
-func trimMKV(adLength, estKeyFrame int, engineDir, tempDir string) error {
+func trimMKV(adLength int, engineDir, tempDir string) error {
 	// Removes a stale temp files to avoid conflcts in func
 	os.Remove(tempDir + "\\" + "untrimmed.episode.mkv")
+	os.Remove(tempDir + "\\" + "split.episode-001.mkv")
 	os.Remove(tempDir + "\\" + "prefix.episode.mkv")
-	os.Remove(tempDir + "\\" + "video.episode.mkv")
+	os.Remove(tempDir + "\\" + "split.episode-002.mkv")
 	os.Remove(tempDir + "\\" + "list.episode.txt")
 
 	// Recursively retries rename to temp filename before execution
@@ -26,53 +27,33 @@ func trimMKV(adLength, estKeyFrame int, engineDir, tempDir string) error {
 		return err
 	}
 
-	// Store the untrimmed video length so we can find the video prefix length later
-	untrimmedLength, err := getVideoLength("untrimmed.episode.mkv", engineDir, tempDir)
-	if err != nil {
-		return err
-	}
-
-	// Finds ffmpeg so we can call system commands on it
+	// Finds the clis we need for trimming
 	ffmpeg, err := filepath.Abs(engineDir + "\\ffmpeg.exe")
 	if err != nil {
 		return anirip.Error{Message: "Unable to find ffmpeg.exe in \\" + engineDir + "\\ directory", Err: err}
 	}
+	mkvmerge, err := filepath.Abs(engineDir + "\\mkvmerge.exe")
+	if err != nil {
+		return anirip.Error{Message: "Unable to find ffmpeg.exe in \\" + engineDir + "\\ directory", Err: err}
+	}
 
-	// Calculates the keyframe offsets for trimming the meat of the video
-	keyFrameOffset := float64(estKeyFrame) / 1000
-	keyFrameOffsetString := strconv.FormatFloat(keyFrameOffset, 'f', 3, 64)
-
-	// Creates the cmd for rough frame trimming
-	cmd := exec.Command(ffmpeg,
-		"-ss", keyFrameOffsetString,
-		"-i", "untrimmed.episode.mkv",
-		"-c", "copy",
-		"-avoid_negative_ts", "1", "-y",
-		"video.episode.mkv")
-	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
+	// Creates the command too split the meat of the video from the first ad chunk
+	cmd := exec.Command(mkvmerge,
+		"--split", "timecodes:"+anirip.MStoTimecode(adLength),
+		"-o", "split.episode.mkv",
+		"untrimmed.episode.mkv",
+	)
+	cmd.Dir = tempDir // Sets working directory to temp so our halves end up there
 
 	// Executes the command
 	_, err = cmd.Output()
 	if err != nil {
-		return anirip.Error{Message: "There was an error while creating the video clip", Err: err}
+		return anirip.Error{Message: "There was an error while splitting the episode", Err: err}
 	}
-
-	// Gets the new video length and calculates the prefix length based on the sizes
-	videoLength, err := getVideoLength("video.episode.mkv", engineDir, tempDir)
-	if err != nil {
-		return err
-	}
-	keyFrameGap := (untrimmedLength - videoLength) - adLength
-
-	// Calculates the intro offsets we will use and represents it as a string
-	trueOffset := float64(adLength) / 1000
-	trueOffsetString := strconv.FormatFloat(trueOffset, 'f', 3, 64)
-	gapOffset := float64(keyFrameGap) / 1000
-	gapOffsetString := strconv.FormatFloat(gapOffset, 'f', 3, 64)
 
 	// We need to ask ffprobe explicitly for an exact framerate because ffmpeg's auto
 	// frame reader thinks 30.30 frames is 30.3, resulting in frame jumps at end of prefix
-	frameRate, err := getVideoFrameRate("video.episode.mkv", engineDir, tempDir)
+	frameRate, err := getVideoFrameRate("untrimmed.episode.mkv", engineDir, tempDir)
 	if err != nil {
 		return err
 	}
@@ -80,10 +61,9 @@ func trimMKV(adLength, estKeyFrame int, engineDir, tempDir string) error {
 
 	// Executes the fine intro trim and waits for the command to finish
 	cmd = exec.Command(ffmpeg,
-		"-ss", trueOffsetString, // Exact timestamp of the ad endings
-		"-i", "untrimmed.episode.mkv",
-		"-t", gapOffsetString, // The exact time between ad ending and frame next keyframe
-		"-crf", "5",
+		"-ss", anirip.MStoTimecode(adLength), // Exact timestamp of the ad endings
+		"-i", "split.episode-001.mkv",
+		"-crf", "8",
 		"-vsync", "1",
 		"-r", frameRateString,
 		"-c:a", "aac", "-y", // Use AAC as audio codec to match video.mkv
@@ -97,7 +77,7 @@ func trimMKV(adLength, estKeyFrame int, engineDir, tempDir string) error {
 	}
 
 	// Creates a text file containing the file names of the 2 files created above
-	fileListBytes := []byte("file 'prefix.episode.mkv'\r\nfile 'video.episode.mkv'")
+	fileListBytes := []byte("file 'prefix.episode.mkv'\r\nfile 'split.episode-002.mkv'")
 	if err = ioutil.WriteFile(tempDir+"\\"+"list.episode.txt", fileListBytes, 0644); err != nil {
 		return anirip.Error{Message: "There was an error while creating list.episode.txt", Err: err}
 	}
@@ -118,8 +98,9 @@ func trimMKV(adLength, estKeyFrame int, engineDir, tempDir string) error {
 
 	// Removes the temporary files we created as they are no longer needed
 	os.Remove(tempDir + "\\" + "untrimmed.episode.mkv")
+	os.Remove(tempDir + "\\" + "split.episode-001.mkv")
 	os.Remove(tempDir + "\\" + "prefix.episode.mkv")
-	os.Remove(tempDir + "\\" + "video.episode.mkv")
+	os.Remove(tempDir + "\\" + "split.episode-002.mkv")
 	os.Remove(tempDir + "\\" + "list.episode.txt")
 	return nil
 }

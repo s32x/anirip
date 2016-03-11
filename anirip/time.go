@@ -5,6 +5,24 @@ import (
 	"time"
 )
 
+// Function responsible for converting an integer of milliseconds to a timestamp
+func MStoTimecode(milliseconds int) string {
+	// Creates a zeroed out time object that we will add our duration to
+	zero := new(time.Time)
+
+	// Parses the integer passed
+	duration, err := time.ParseDuration(strconv.Itoa(milliseconds) + "ms")
+	if err != nil {
+		return "00:00:00.000"
+	}
+
+	// Adds the duration to the zero time
+	time := zero.Add(duration)
+
+	// Returns the timestamp representation of our duration
+	return time.Format("15:04:05.000")
+}
+
 // Shifts the subtitle time to account for the passed millisecond sub offset
 func ShiftTime(subTime string, offset int) (string, error) {
 	// Sets the parsing format to accept a time like this

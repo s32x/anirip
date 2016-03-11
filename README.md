@@ -8,6 +8,7 @@ In order to run ANIRip the below windows binaries are required (not included)...
 - PHP(5.2.0) in \engine\php\ dir
 - AdobeHDS as ```AdobeHDS.php``` in \engine\ dir
 - RTMPDump as ```rtmpdump.exe``` in \engine\ dir
+- MKVMerge as ```mkvmerge.exe``` in \engine\ dir
 - FFMpeg as ```ffmpeg.exe``` in \engine\ dir
 - FFProbe as ```ffprobe.exe``` in \engine\ dir
 - MKVClean as ```mkvclean.exe``` in \engine\ dir

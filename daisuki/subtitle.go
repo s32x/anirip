@@ -97,12 +97,32 @@ func (episode *DaisukiEpisode) getSubtitles(subtitles *TT, cookies []*http.Cooki
 		return anirip.Error{Message: "There was an error reading the search response", Err: err}
 	}
 
-	// replaces ampersands in subs with the appropriate xml syntax
-	// because it appears daisuki won't respect XML 1.0 formatting
-	strings.Replace(string(subtitleXML), "&", "&amp;", -1)
+	// Because Daisuki uses TTML, it doesn't follow the XML 1.0 guidelines.
+	// We create an element array to help fix invalid XML 1.0 characters
+	elementArray := strings.SplitAfterN(string(subtitleXML), ">", -1)
+
+	// We want to edit the elements by doing string replacement on the invalid chars
+	for i := 0; i < len(elementArray); i++ {
+		// Splits each element into one or two peices and inspects their contents
+		elementSplit := strings.Split(elementArray[i], "<")
+		// While only looking at the text portion (before the "<") do string replacement
+		if strings.Contains(elementSplit[0], "&") {
+			splitEnd := strings.Replace(elementArray[i], elementSplit[0], "", -1) // often a completely empty string
+			// HERES WHERE WE EXPLICITY REPLACE ILLEGAL CHARACTERS
+			elementArray[i] = strings.Replace(elementSplit[0], "&", "&amp;", -1)
+			// ADD ANY OTHERS HERE
+			elementArray[i] = elementArray[i] + splitEnd
+		}
+	}
+
+	// Finally turns the entire XML 1.0 compliant script array into a string
+	subtitleXMLString := ""
+	for _, element := range elementArray {
+		subtitleXMLString = subtitleXMLString + element
+	}
 
 	// Parses the xml into our subtitles object
-	if err = xml.Unmarshal(subtitleXML, subtitles); err != nil {
+	if err = xml.Unmarshal([]byte(subtitleXMLString), subtitles); err != nil {
 		return anirip.Error{Message: "There was an error while reading subtitle information", Err: err}
 	}
 	return nil

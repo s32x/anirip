@@ -53,10 +53,10 @@ func trimMKV(adLength int, engineDir, tempDir string) error {
 	cmd = exec.Command(ffmpeg,
 		"-i", "split.episode-001.mkv",
 		"-ss", anirip.MStoTimecode(adLength), // Exact timestamp of the ad endings
-		"-c:v", "libx264",
-		"-c:a", "aac",
+		"-c:v", "h264",
+		"-crf", "15",
 		"-preset", "slow",
-		"-crf", "5", "-y", // Use AAC as audio codec to match video.mkv
+		"-c:a", "copy", "-y", // Use AAC as audio codec to match video.mkv
 		"prefix.episode.mkv")
 	cmd.Dir = tempDir // Sets working directory to temp
 

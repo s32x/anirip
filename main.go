@@ -188,7 +188,7 @@ func main() {
 func init() {
 	// Intro header
 	fmt.Printf("-------------------------------------------------------------\n")
-	fmt.Printf("------------------- ANIRip v1.1.3 by Viz_ -------------------\n")
+	fmt.Printf("------------------- ANIRip v1.1.4 by Viz_ -------------------\n")
 	fmt.Printf("-------------------------------------------------------------\n\n")
 	fmt.Printf("- Currently supports Crunchyroll & Daisuki show URLs\n\n")
 

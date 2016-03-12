@@ -10,11 +10,10 @@ In order to run ANIRip the below windows binaries are required (not included)...
 - RTMPDump as ```rtmpdump.exe``` in \engine\ dir
 - MKVMerge as ```mkvmerge.exe``` in \engine\ dir
 - FFMpeg as ```ffmpeg.exe``` in \engine\ dir
-- FFProbe as ```ffprobe.exe``` in \engine\ dir
 - MKVClean as ```mkvclean.exe``` in \engine\ dir
 
 ## How to build
-If you're interested in experimenting with the application, are on a Windows machine, have Go 1.5 installed, and agree to the below disclaimer, compile the core binary using ```builder.bat``` and create the two below directories in the same directory as ```ANIRip.exe```.
+If you're interested in experimenting with the application, are on a Windows machine, have Go 1.6 installed, and agree to the below disclaimer, compile the core binary using ```builder.bat``` and create the two below directories in the same directory as ```ANIRip.exe```.
 
 - \engine\ (Where the above dependencies must be held)
 - \temp\ (Where temporary flv/fragment/mkv/ass files are held before finalization)

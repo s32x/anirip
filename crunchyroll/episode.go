@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -191,16 +193,61 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// Executes the command
-	if err = cmd.Run(); err != nil {
-		// Recursively recalls dempEpisodeFLV i number of times
-		if i > 0 {
-			episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
-		}
-		return anirip.Error{Message: "Episode failed to download...", Err: err}
+	if err := cmd.Start(); err != nil {
+		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}
 	}
 
-	return nil
+	// Spins up goroutine to wait for the coommand to finish
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	// Checks for rtmpduump hangs
+	videoSize := int64(0)
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			// Gets the video file
+			video, err := os.Open(tempDir + "\\incomplete.episode.flv")
+			if err != nil {
+				continue
+			}
+			// Gets info on the video file
+			videoInfo, err := video.Stat()
+			if err != nil {
+				continue
+			}
+			tempSize := videoInfo.Size()
+			video.Close()
+			// Checks to be sure the download is still progressing
+			if tempSize > videoSize {
+				videoSize = tempSize
+				continue
+			} else {
+				// Kills the process and restarts if the download is hanging
+				if err := cmd.Process.Kill(); err != nil {
+					return anirip.Error{Message: "There was an error killing the child process", Err: err}
+				}
+				// Recursively recalls dumpEpisodeFLV i number of times
+				if i > 0 {
+					color.Yellow("\n> Download is hanging, retrying...\n")
+					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
+				}
+				return anirip.Error{Message: "Episode failed to download...", Err: err}
+			}
+		case err := <-done:
+			if err != nil {
+				// Recursively recalls dumpEpisodeFLV i number of times
+				if i > 0 {
+					color.Yellow("\n> Download is hanging, retrying...\n")
+					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
+				}
+				return anirip.Error{Message: "Episode failed to download...", Err: err}
+			}
+			return nil
+		}
+	}
 }
 
 // Figures out what the format of the video should be based on crunchyroll xml

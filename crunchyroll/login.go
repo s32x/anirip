@@ -3,7 +3,6 @@ package crunchyroll
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -152,7 +152,7 @@ func validateCookies(session *CrunchyrollSession) (bool, error) {
 
 	// Checks if the Username used to login is in the home page...
 	if validationResponse.StatusCode == 200 && userName != "" {
-		fmt.Printf("Logged in to Crunchyroll as " + userName + "\n\n")
+		color.Green("> Logged in to Crunchyroll as " + userName + "\n\n")
 		return true, nil
 	}
 	return false, nil

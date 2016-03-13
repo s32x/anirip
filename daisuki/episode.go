@@ -308,9 +308,6 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
-	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + "\\incomplete.episode.flv")
-
 	// Attempts to dump the FLV of the episode to file
 	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)
 	if err != nil {
@@ -331,6 +328,9 @@ func (episode *DaisukiEpisode) GetFileName() string {
 
 // Calls on AdobeHDS.php to dump the episode and name it
 func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir string) error {
+	// Remove stale temp file to avoid conflcts with CLI
+	os.Remove(tempDir + "\\incomplete.episode.flv")
+
 	episode.Quality = quality // Sets the quality to the passed quality string
 
 	// Gets the path of php and our adobeHDS php fil
@@ -351,10 +351,11 @@ func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir
 		"--referrer", episode.URL,
 		"--rename", "--delete")
 	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	// Executes the command
-	_, err = cmd.Output()
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		// Recursively recalls dempEpisodeFLV if we get an unfinished download
 		episode.dumpEpisodeFLV(quality, engineDir, tempDir)
 	}

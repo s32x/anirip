@@ -3,13 +3,13 @@ package daisuki
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -148,7 +148,7 @@ func validateCookies(session *DaisukiSession) (bool, error) {
 
 	// Checks if the Username used to login is in the account info page...
 	if validationResponse.StatusCode == 200 && userName != "" {
-		fmt.Printf("Logged in to Daisuki as " + userName + "\n\n")
+		color.Green("> Logged in to Daisuki as " + userName + "\n\n")
 		return true, nil
 	}
 	return false, nil

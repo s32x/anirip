@@ -148,11 +148,8 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 
 // Downloads entire FLV episodes to our temp directory
 func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir string, cookies []*http.Cookie) error {
-	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + "\\incomplete.episode.flv")
-
-	// Attempts to dump the FLV of the episode to file
-	err := episode.dumpEpisodeFLV(engineDir, tempDir)
+	// Attempts to dump the FLV of the episode to file / will retry up to 5 times
+	err := episode.dumpEpisodeFLV(engineDir, tempDir, 5)
 	if err != nil {
 		return err
 	}
@@ -170,7 +167,10 @@ func (episode *CrunchyrollEpisode) GetFileName() string {
 }
 
 // Calls rtmpdump.exe to dump the episode and names it
-func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string) error {
+func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i int) error {
+	// Remove stale temp file to avoid conflcts with CLI
+	os.Remove(tempDir + "\\incomplete.episode.flv")
+
 	// Gets the path of our rtmp dump exe
 	path, err := filepath.Abs(engineDir + "\\rtmpdump.exe")
 	if err != nil {
@@ -188,18 +188,16 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string) err
 		"-y", episode.MediaInfo.File,
 		"-o", "incomplete.episode.flv")
 	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
-
-	// Append retry param if the file already exists
-	_, err = filepath.Abs(tempDir + "\\" + episode.FileName + ".flv")
-	if err == nil {
-		cmd.Args = append(cmd.Args, "-e")
-	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	// Executes the command
-	_, err = cmd.Output()
-	if err != nil {
-		// Recursively recalls dempEpisodeFLV if we get an unfinished download
-		episode.dumpEpisodeFLV(engineDir, tempDir)
+	if err = cmd.Run(); err != nil {
+		// Recursively recalls dempEpisodeFLV i number of times
+		if i > 0 {
+			episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
+		}
+		return anirip.Error{Message: "Episode failed to download...", Err: err}
 	}
 
 	return nil

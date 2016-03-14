@@ -90,10 +90,10 @@ func main() {
 		}
 
 		// Creates a folder in the temporary directory that will store the seasons
-		os.Mkdir(tempDir+"\\"+show.GetTitle(), 0777)
+		os.Mkdir(tempDir+"\\"+anirip.CleanFileName(show.GetTitle()), 0777)
 		for _, season := range show.GetSeasons() {
 			// Creates a folder in the show directory that will store the episodes
-			os.Mkdir(tempDir+"\\"+show.GetTitle()+"\\"+seasonNameArray[season.GetNumber()], 0777)
+			os.Mkdir(tempDir+"\\"+anirip.CleanFileName(show.GetTitle())+"\\"+seasonNameArray[season.GetNumber()], 0777)
 			for _, episode := range season.GetEpisodes() {
 				color.Cyan("> Getting Episode Info...\n")
 				if err := episode.GetEpisodeInfo("1080p", session.GetCookies()); err != nil {
@@ -103,7 +103,7 @@ func main() {
 				}
 
 				// Checks to see if the episode already exists, in which case we continue to the next
-				_, err = os.Stat(tempDir + "\\" + show.GetTitle() + "\\" + seasonNameArray[season.GetNumber()] + "\\" + episode.GetFileName() + ".mkv")
+				_, err = os.Stat(tempDir + "\\" + anirip.CleanFileName(show.GetTitle()) + "\\" + seasonNameArray[season.GetNumber()] + "\\" + episode.GetFileName() + ".mkv")
 				if err == nil {
 					color.Cyan(episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n\n")
 					continue
@@ -180,14 +180,14 @@ func main() {
 
 				// Moves the episode to the appropriate directory
 				if err := anirip.Rename(tempDir+"\\episode.mkv",
-					tempDir+"\\"+show.GetTitle()+"\\"+seasonNameArray[season.GetNumber()]+"\\"+episode.GetFileName()+".mkv", 10); err != nil {
+					tempDir+"\\"+anirip.CleanFileName(show.GetTitle())+"\\"+seasonNameArray[season.GetNumber()]+"\\"+episode.GetFileName()+".mkv", 10); err != nil {
 					color.Red(err.Error() + "\n\n")
 					pause()
 				}
 				color.Green("> Downloading and merging completed successfully.\n\n")
 			}
 		}
-		if err := anirip.Rename(tempDir+"\\"+show.GetTitle(), outputDir+"\\"+show.GetTitle(), 10); err != nil {
+		if err := anirip.Rename(tempDir+"\\"+anirip.CleanFileName(show.GetTitle()), outputDir+"\\"+anirip.CleanFileName(show.GetTitle()), 10); err != nil {
 			color.Red(err.Error() + "\n\n")
 			pause()
 		}

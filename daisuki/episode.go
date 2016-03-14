@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -327,7 +328,7 @@ func (episode *DaisukiEpisode) GetFileName() string {
 }
 
 // Calls on AdobeHDS.php to dump the episode and name it
-func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir string) error {
+func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir string, i int) error {
 	// Remove stale temp file to avoid conflcts with CLI
 	os.Remove(tempDir + "\\incomplete.episode.flv")
 
@@ -354,13 +355,62 @@ func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// Executes the command
-	if err = cmd.Run(); err != nil {
-		// Recursively recalls dempEpisodeFLV if we get an unfinished download
-		episode.dumpEpisodeFLV(quality, engineDir, tempDir)
+	if err := cmd.Start(); err != nil {
+		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}
 	}
 
-	return nil
+	// Spins up goroutine to wait for the coommand to finish
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	// Checks for AdobeHDS hangs
+	videoSize := int64(0)
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			// Gets the video file
+			video, err := os.Open(tempDir + "\\incomplete.episode.flv")
+			if err != nil {
+				continue
+			}
+			// Gets info on the video file
+			videoInfo, err := video.Stat()
+			if err != nil {
+				continue
+			}
+			video.Close()
+			// Checks to be sure the download is still progressing
+			if videoInfo.Size() > videoSize {
+				videoSize = videoInfo.Size()
+				continue
+			} else {
+				// Kills the process and restarts if the download is hanging
+				if err := cmd.Process.Kill(); err != nil {
+					return anirip.Error{Message: "There was an error killing the child process", Err: err}
+				}
+				// Recursively recalls dumpEpisodeFLV i number of times
+				if i > 0 {
+					color.Yellow("\n> Download is hanging, retrying...\n")
+					episode.dumpEpisodeFLV(quality, engineDir, tempDir, i-1)
+					continue
+				}
+				return anirip.Error{Message: "Episode failed to download...", Err: err}
+			}
+		case err := <-done:
+			if err != nil {
+				// Recursively recalls dumpEpisodeFLV i number of times
+				if i > 0 {
+					color.Yellow("\n> Download is hanging, retrying...\n")
+					episode.dumpEpisodeFLV(quality, engineDir, tempDir, i-1)
+					continue
+				}
+				return anirip.Error{Message: "Episode failed to download...", Err: err}
+			}
+			return nil
+		}
+	}
 }
 
 // Generates a random GUID of n length for use in our Manifest URL

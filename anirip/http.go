@@ -1,7 +1,6 @@
 package anirip
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -26,8 +25,7 @@ func GetHTTPResponse(method, urlStr string, body io.Reader, header http.Header, 
 	// Executes the new request and returns the response, retries recursively if theres a failure
 	response, err := http.DefaultTransport.RoundTrip(request)
 	if err != nil {
-		fmt.Println("There was an error performing the " + method + " request on " + urlStr + " : " + err.Error() + "\n")
-		GetHTTPResponse(method, urlStr, body, header, cookies)
+		return nil, Error{Message: "There was an error performing the " + method + " request on " + urlStr, Err: err}
 	}
 	return response, nil
 }

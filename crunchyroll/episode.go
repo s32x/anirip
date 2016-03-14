@@ -203,7 +203,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 		done <- cmd.Wait()
 	}()
 
-	// Checks for rtmpduump hangs
+	// Checks for rtmpdump hangs
 	videoSize := int64(0)
 	for {
 		select {
@@ -218,11 +218,10 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 			if err != nil {
 				continue
 			}
-			tempSize := videoInfo.Size()
 			video.Close()
 			// Checks to be sure the download is still progressing
-			if tempSize > videoSize {
-				videoSize = tempSize
+			if videoInfo.Size() > videoSize {
+				videoSize = videoInfo.Size()
 				continue
 			} else {
 				// Kills the process and restarts if the download is hanging
@@ -233,6 +232,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 				if i > 0 {
 					color.Yellow("\n> Download is hanging, retrying...\n")
 					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
+					continue
 				}
 				return anirip.Error{Message: "Episode failed to download...", Err: err}
 			}
@@ -242,6 +242,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 				if i > 0 {
 					color.Yellow("\n> Download is hanging, retrying...\n")
 					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
+					continue
 				}
 				return anirip.Error{Message: "Episode failed to download...", Err: err}
 			}

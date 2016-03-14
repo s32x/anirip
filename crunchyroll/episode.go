@@ -223,7 +223,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 			if videoInfo.Size() > videoSize {
 				videoSize = videoInfo.Size()
 				continue
-			} else {
+			} else if !cmd.ProcessState.Exited() {
 				// Kills the process and restarts if the download is hanging
 				if err := cmd.Process.Kill(); err != nil {
 					return anirip.Error{Message: "There was an error killing the child process", Err: err}

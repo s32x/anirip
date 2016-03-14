@@ -240,7 +240,7 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 			if err != nil {
 				// Recursively recalls dumpEpisodeFLV i number of times
 				if i > 0 {
-					color.Yellow("\n> Download is hanging, retrying...\n")
+					color.Yellow("\n> There was an error downloading, retrying...\n")
 					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
 					continue
 				}

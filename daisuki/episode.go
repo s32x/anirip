@@ -310,7 +310,7 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 // Downloads entire FLV episodes to our temp directory
 func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file
-	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir)
+	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir, 5)
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir
 			if err != nil {
 				// Recursively recalls dumpEpisodeFLV i number of times
 				if i > 0 {
-					color.Yellow("\n> Download is hanging, retrying...\n")
+					color.Yellow("\n> There was an error downloading, retrying...\n")
 					episode.dumpEpisodeFLV(quality, engineDir, tempDir, i-1)
 					continue
 				}

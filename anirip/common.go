@@ -43,5 +43,6 @@ func CleanFileName(fileName string) string {
 	for _, illegalChar := range []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"} {
 		newFileName = strings.Replace(newFileName, illegalChar, "", -1)
 	}
+	newFileName = strings.Replace(newFileName, "  ", " ", -1) // Replaces double spaces with a single space
 	return newFileName
 }

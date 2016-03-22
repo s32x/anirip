@@ -1,3 +1,7 @@
+go get github.com/PuerkitoBio/goquery
+go get github.com/fatih/color
+go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+go get github.com/go-ini/ini
 cd anirip
 go install
 cd..

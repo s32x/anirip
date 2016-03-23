@@ -3,12 +3,12 @@
 package main
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/codegangsta/cli"
 	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 	"github.com/sdwolfe32/ANIRip/crunchyroll"
@@ -19,214 +19,199 @@ const (
 	daisukiIntroLength = 5040
 	aniplexIntroLength = 6747
 	sunriseIntroLength = 8227
-	engineDir          = "engine"   // Where our clis are required to be
-	cookieDir          = "cookies"  // Where we will store the cookies
-	tempDir            = "temp"     // Where our temporary video/audio/subtitle streams will be held
-	outputDir          = "finished" // Where our finalized show directories will be held
 )
 
 func main() {
-	// Asks the user for their desired show URLs delimited by spaces
-	showURLs := ""
-	getStandardUserInput("Enter a list of Show URLs (delimited by spaces) : ", &showURLs)
-	showURLArray := strings.Split(showURLs, " ")
+	showURL := ""
+	username := ""
+	password := ""
+	language := "English"
+	quality := "1080p"
+	trim := ""
+	daisukiIntroTrim := false
+	aniplexIntroTrim := false
+	sunriseIntroTrim := false
 
-	// Iterates over every showURL found in the array
-	for _, showURL := range showURLArray {
+	app := cli.NewApp()
+	app.Name = "ANIRip"
+	app.Author = "Steven Wolfe"
+	app.Email = "steven@swolfe.me"
+	app.Version = "v1.3.0(3/22/2016)"
+	app.Usage = "Crunchyroll/Daisuki show ripper CLI"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "user, u",
+			Value:       "myusername",
+			Usage:       "premium username used to access video stream",
+			Destination: &username,
+		},
+		cli.StringFlag{
+			Name:        "pass, p",
+			Value:       "mypassword",
+			Usage:       "premium password used to access video stream",
+			Destination: &password,
+		},
+		cli.StringFlag{
+			Name:        "lang, l",
+			Value:       "english",
+			Usage:       "desired subtitle language",
+			Destination: &language,
+		},
+		cli.StringFlag{
+			Name:        "quality, q",
+			Value:       "1080p",
+			Usage:       "desired video quality",
+			Destination: &quality,
+		},
+		cli.StringFlag{
+			Name:        "trim, t",
+			Value:       "daisuki,aniplex,sunrise",
+			Usage:       "desired intros to be trimmed off of final video",
+			Destination: &quality,
+		},
+	}
+	app.Action = func(c *cli.Context) {
+		color.Cyan(app.Name + " " + app.Version + " - by " + app.Author + " <" + app.Email + ">\n")
+		if c.NArg() > 0 {
+			showURL = c.Args()[0]
+		} else {
+			color.Red("[ANIRip] No show URL provided.")
+			return
+		}
+
 		// Parses the URL so we can accurately judge the provider based on the host
+		color.White("[ANIRip] Parsing the URL passed...")
 		url, err := url.Parse(showURL)
 		if err != nil {
-			color.Red("There was an error parsing the URL you entered.\n")
-			main()
+			color.Red("[ANIRip] There was an error parsing the URL you entered.\n")
+			return
 		}
 
 		// Creates the authentication & show objects for the provider we're ripping from
 		var session anirip.Session
 		var show anirip.Show
 		if strings.Contains(strings.ToLower(url.Host), "crunchyroll") {
+			color.White("[ANIRip] Logging into Crunchyroll as " + username + "...")
 			show = new(crunchyroll.CrunchyrollShow)
 			session = new(crunchyroll.CrunchyrollSession)
 		} else if strings.Contains(strings.ToLower(url.Host), "daisuki") {
+			color.White("[ANIRip] Logging into Daisuki as " + username + "...")
 			show = new(daisuki.DaisukiShow)
 			session = new(daisuki.DaisukiSession)
-		}
-
-		// Performs the generic login procedure
-		username := ""
-		password := ""
-		login(session, username, password, cookieDir)
-
-		// Attempts to scrape the shows metadata/information
-		if err := show.ScrapeEpisodes(showURL, session.GetCookies()); err != nil {
-			color.Red(err.Error() + "\n\n")
-			pause()
+		} else {
+			color.Red("[ANIRip] The URL provided is not supported.")
 			return
 		}
 
-		// Asks if the user wants to trim any intro clips off of the final file IF provider is daisuki
-		daisukiIntroTrim := "n"
-		aniplexIntroTrim := "n"
-		sunriseIntroTrim := "n"
-		if strings.Contains(strings.ToLower(showURL), "daisuki") {
-			getStandardUserInput("Do you want to trim a Daisuki intro? [Y/N] : ", &daisukiIntroTrim)
-			getStandardUserInput("Do you want to trim an Aniplex intro? [Y/N] : ", &aniplexIntroTrim)
-			getStandardUserInput("Do you want to trim a Sunrise intro? [Y/N] : ", &sunriseIntroTrim)
-			fmt.Printf("\n")
+		// Performs the generic login procedure
+		if err = session.Login(username, password); err != nil {
+			color.Red("[ANIRip] " + err.Error())
+			return
 		}
 
-		// Sets up an array that we will use for season directory naming
-		seasonNameArray := []string{
-			"Specials",   // Season num 0
-			"Season One", // Season num 1...
-			"Season Two",
-			"Season Three",
-			"Season Four",
-			"Season Five",
-			"Season Six",
-			"Season Seven",
-			"Season Eight",
-			"Season Nine",
-			"Season Ten",
+		// Attempts to scrape the shows metadata/information
+		color.White("[ANIRip] Getting a list of episodes for the show...")
+		if err = show.ScrapeEpisodes(showURL, session.GetCookies()); err != nil {
+			color.Red("[ANIRip] " + err.Error())
+			return
 		}
 
-		// Creates a folder in the temporary directory that will store the seasons
-		os.Mkdir(tempDir+"\\"+anirip.CleanFileName(show.GetTitle()), 0777)
+		// Sets the boolean values for what intros we would like to trim
+		if strings.Contains(strings.ToLower(trim), "daisuki") {
+			daisukiIntroTrim = true
+		}
+		if strings.Contains(strings.ToLower(trim), "aniplex") {
+			daisukiIntroTrim = true
+		}
+		if strings.Contains(strings.ToLower(trim), "sunrise") {
+			daisukiIntroTrim = true
+		}
+
 		for _, season := range show.GetSeasons() {
-			// Creates a folder in the show directory that will store the episodes
-			os.Mkdir(tempDir+"\\"+anirip.CleanFileName(show.GetTitle())+"\\"+seasonNameArray[season.GetNumber()], 0777)
 			for _, episode := range season.GetEpisodes() {
-				color.Cyan("> Getting Episode Info...\n")
-				if err := episode.GetEpisodeInfo("1080p", session.GetCookies()); err != nil {
-					color.Red(err.Error() + "\n\n")
-					pause()
+				color.White("[ANIRip] Getting Episode Info...\n")
+				if err = episode.GetEpisodeInfo(quality, session.GetCookies()); err != nil {
+					color.Red("[ANIRip] " + err.Error())
 					continue
 				}
 
 				// Checks to see if the episode already exists, in which case we continue to the next
-				_, err = os.Stat(tempDir + "\\" + anirip.CleanFileName(show.GetTitle()) + "\\" + seasonNameArray[season.GetNumber()] + "\\" + episode.GetFileName() + ".mkv")
+				_, err = os.Stat(episode.GetFileName() + ".mkv")
 				if err == nil {
-					color.Cyan(episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n\n")
+					color.Green("[ANIRip] " + episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n")
 					continue
 				}
 
 				subOffset := 0
-				color.Cyan("> Downloading " + episode.GetFileName() + "\n\n")
+				color.Cyan("[ANIRip] Downloading " + episode.GetFileName() + "\n")
 				// Downloads full MKV video from stream provider
-				color.Green("> Downloading video...\n")
-				if err := episode.DownloadEpisode("1080p", engineDir, tempDir, session.GetCookies()); err != nil {
-					color.Red(err.Error() + "\n\n")
-					pause()
+				color.White("[ANIRip] Downloading video...\n")
+				if err := episode.DownloadEpisode(quality, session.GetCookies()); err != nil {
+					color.Red("[ANIRip] " + err.Error() + "\n")
 					continue
 				}
 
 				// Trims down the downloaded MKV if the user wants to trim a Daisuki intro
-				if strings.ToLower(daisukiIntroTrim) == "y" {
+				if daisukiIntroTrim {
 					subOffset = subOffset + daisukiIntroLength
-					color.Green("> Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
-					if err := trimMKV(daisukiIntroLength, engineDir, tempDir); err != nil {
-						color.Red(err.Error() + "\n\n")
-						pause()
+					color.White("[ANIRip] Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
+					if err := trimMKV(daisukiIntroLength); err != nil {
+						color.Red("[ANIRip] " + err.Error() + "\n")
 						continue
 					}
 				}
 
 				// Trims down the downloaded MKV if the user wants to trim an Aniplex intro
-				if strings.ToLower(aniplexIntroTrim) == "y" {
+				if aniplexIntroTrim {
 					subOffset = subOffset + aniplexIntroLength
-					color.Green("> Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
-					if err := trimMKV(aniplexIntroLength, engineDir, tempDir); err != nil {
-						color.Red(err.Error() + "\n\n")
-						pause()
+					color.White("[ANIRip] Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
+					if err := trimMKV(aniplexIntroLength); err != nil {
+						color.Red("[ANIRip] " + err.Error() + "\n")
 						continue
 					}
 				}
 
 				// Trims down the downloaded MKV if the user wants to trim a Sunrise intro
-				if strings.ToLower(sunriseIntroTrim) == "y" {
+				if sunriseIntroTrim {
 					subOffset = subOffset + sunriseIntroLength
-					color.Green("> Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
-					if err := trimMKV(sunriseIntroLength, engineDir, tempDir); err != nil {
-						color.Red(err.Error() + "\n\n")
-						pause()
+					color.White("[ANIRip] Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
+					if err := trimMKV(sunriseIntroLength); err != nil {
+						color.Red("[ANIRip] " + err.Error() + "\n")
 						continue
 					}
 				}
 
 				// Downloads the subtitles to .ass format and
 				// offsets their times by the passed provided interval
-				color.Green("> Downloading subtitles with a total offset of " + strconv.Itoa(subOffset) + "ms...\n")
-				subtitleLang, err := episode.DownloadSubtitles("English", subOffset, tempDir, session.GetCookies())
+				color.White("[ANIRip] Downloading subtitles with a total offset of " + strconv.Itoa(subOffset) + "ms...\n")
+				subtitleLang, err := episode.DownloadSubtitles(language, subOffset, session.GetCookies())
 				if err != nil {
-					color.Red(err.Error() + "\n\n")
-					pause()
+					color.Red("[ANIRip] " + err.Error() + "\n")
 					continue
 				}
 
 				// Attempts to merge the downloaded subtitles into the video strea
-				color.Green("> Merging subtitles into mkv container...\n")
-				if err := mergeSubtitles("jpn", subtitleLang, engineDir, tempDir); err != nil {
-					color.Red(err.Error() + "\n\n")
-					pause()
+				color.White("[ANIRip] Merging subtitles into mkv container...\n")
+				if err := mergeSubtitles("jpn", subtitleLang); err != nil {
+					color.Red("[ANIRip] " + err.Error() + "\n")
 					continue
 				}
 
 				// Cleans and optimizes the final MKV
-				color.Green("> Cleaning and optimizing mkv...\n")
-				if err := cleanMKV(engineDir, tempDir); err != nil {
-					color.Red(err.Error() + "\n\n")
-					pause()
+				color.White("[ANIRip] Cleaning and optimizing mkv...\n")
+				if err := cleanMKV(); err != nil {
+					color.Red("[ANIRip] " + err.Error() + "\n")
 					continue
 				}
 
 				// Moves the episode to the appropriate directory
-				if err := anirip.Rename(tempDir+"\\episode.mkv",
-					tempDir+"\\"+anirip.CleanFileName(show.GetTitle())+"\\"+seasonNameArray[season.GetNumber()]+"\\"+episode.GetFileName()+".mkv", 10); err != nil {
+				if err := anirip.Rename("episode.mkv", episode.GetFileName()+".mkv", 10); err != nil {
 					color.Red(err.Error() + "\n\n")
-					pause()
 				}
-				color.Green("> Downloading and merging completed successfully.\n\n")
+				color.Green("[ANIRip] Downloading and merging completed successfully.\n")
 			}
 		}
-		if err := anirip.Rename(tempDir+"\\"+anirip.CleanFileName(show.GetTitle()), outputDir+"\\"+anirip.CleanFileName(show.GetTitle()), 10); err != nil {
-			color.Red(err.Error() + "\n\n")
-			pause()
-		}
-		color.Cyan("> Completed processing episodes for " + show.GetTitle() + "\n\n")
+		color.Cyan("[ANIRip] Completed processing episodes for " + show.GetTitle() + "\n")
 	}
-	pause()
-}
-
-func init() {
-	// Intro header
-	color.Green("-------------------------------------------------------------\n")
-	color.Green("------------------- ANIRip v1.2.0 by Viz_ -------------------\n")
-	color.Green("-------------------------------------------------------------\n\n")
-	color.Green("- Currently supports Crunchyroll & Daisuki show URLs\n\n")
-
-	// Checks for the existance of our required output folders and creates them if they don't
-	_, err := os.Stat(outputDir)
-	if err != nil {
-		os.Mkdir(outputDir, 0777)
-	}
-
-	_, err = os.Stat(tempDir)
-	if err != nil {
-		os.Mkdir(tempDir, 0777)
-	}
-
-	_, err = os.Stat(cookieDir)
-	if err != nil {
-		os.Mkdir(cookieDir, 0777)
-	}
-}
-
-func login(session anirip.Session, username, password, cookieDir string) {
-	fmt.Printf("\n")
-	if err := session.Login(username, password, cookieDir); err != nil {
-		color.Green("Please login to the above provider.")
-		getStandardUserInput("Username : ", &username)
-		getStandardUserInput("Password : ", &password)
-		login(session, username, password, cookieDir)
-	}
-	return
+	app.Run(os.Args)
 }

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -21,9 +20,9 @@ type CrunchyrollSession struct {
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func (session *CrunchyrollSession) Login(user, pass, cookieDir string) error {
+func (session *CrunchyrollSession) Login(user, pass string) error {
 	// First checks to see if we already have a cookie config
-	exists, err := getStoredCookies(session, cookieDir)
+	exists, err := getStoredCookies(session)
 	if err != nil {
 		return err
 	}
@@ -57,7 +56,7 @@ func (session *CrunchyrollSession) Login(user, pass, cookieDir string) error {
 		}
 
 		// Writes cookies to cookies file
-		err := ioutil.WriteFile(cookieDir+"\\crunchyroll.cookie", sessionBytes.Bytes(), 0644)
+		err := ioutil.WriteFile("crunchyroll.cookie", sessionBytes.Bytes(), 0644)
 		if err != nil {
 			return anirip.Error{Message: "There was an error writing cookies to file", Err: err}
 		}
@@ -72,13 +71,13 @@ func (session *CrunchyrollSession) GetCookies() []*http.Cookie {
 }
 
 // Gets stored cookies found in cookiesFile
-func getStoredCookies(session *CrunchyrollSession, cookieDir string) (bool, error) {
+func getStoredCookies(session *CrunchyrollSession) (bool, error) {
 	// Checks if file exists - will return it's contents if so
-	if _, err := os.Stat(cookieDir + "\\crunchyroll.cookie"); err == nil {
-		sessionBytes, err := ioutil.ReadFile(cookieDir + "\\crunchyroll.cookie")
+	if _, err := os.Stat("crunchyroll.cookie"); err == nil {
+		sessionBytes, err := ioutil.ReadFile("crunchyroll.cookie")
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove(cookieDir + "\\crunchyroll.cookie")
+			_ = os.Remove("crunchyroll.cookie")
 			return false, anirip.Error{Message: "There was an error reading your cookies file", Err: err}
 		}
 
@@ -90,7 +89,7 @@ func getStoredCookies(session *CrunchyrollSession, cookieDir string) (bool, erro
 		err = sessionDecoder.Decode(&session)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove(cookieDir + "\\crunchyroll.cookie")
+			_ = os.Remove("crunchyroll.cookie")
 			return false, anirip.Error{Message: "There was an error decoding your cookies file", Err: err}
 		}
 		// Cookies are able to be decoded so return true
@@ -152,7 +151,6 @@ func validateCookies(session *CrunchyrollSession) (bool, error) {
 
 	// Checks if the Username used to login is in the home page...
 	if validationResponse.StatusCode == 200 && userName != "" {
-		color.Green("> Logged in to Crunchyroll as " + userName + "\n\n")
 		return true, nil
 	}
 	return false, nil

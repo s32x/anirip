@@ -9,7 +9,7 @@ type Error struct {
 
 func (e Error) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf(">>> Error : %v : %v", e.Message, e.Err)
+		return fmt.Sprintf("Error : %v : %v", e.Message, e.Err)
 	}
-	return fmt.Sprintf(">>> Error : %v.", e.Message)
+	return fmt.Sprintf("Error : %v.", e.Message)
 }

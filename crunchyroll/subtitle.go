@@ -100,9 +100,9 @@ type Event struct {
 
 // Entirely downloads subtitles to our temp directory
 // IGNORING offset for now (no reason to trim cr subs)
-func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
+func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, cookies []*http.Cookie) (string, error) {
 	// Remove stale temp file to avoid conflcts in func
-	os.Remove(tempDir + "\\subtitles.episode.ass")
+	os.Remove("subtitles.episode.ass")
 
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
@@ -122,7 +122,7 @@ func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int
 	}
 
 	// Dumps our final subtitle string into an ass file for merging later on
-	if err = episode.dumpSubtitleASS(offset, subtitles, tempDir); err != nil {
+	if err = episode.dumpSubtitleASS(offset, subtitles); err != nil {
 		return "", err
 	}
 
@@ -243,7 +243,7 @@ func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies 
 }
 
 // Dumps the crunchyroll subtitles to file to be muxed into MKV
-func (episode *CrunchyrollEpisode) dumpSubtitleASS(offset int, subtitles *Subtitle, tempDir string) error {
+func (episode *CrunchyrollEpisode) dumpSubtitleASS(offset int, subtitles *Subtitle) error {
 	// Attempts to decrypt the compressed subtitles we recieved
 	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {
@@ -258,7 +258,7 @@ func (episode *CrunchyrollEpisode) dumpSubtitleASS(offset int, subtitles *Subtit
 
 	// Writes the ASS subtitles to a file in our temp folder (with utf-8-sig encoding)
 	subtitlesBytes := append([]byte{0xef, 0xbb, 0xbf}, []byte(formattedSubtitles)...)
-	err = ioutil.WriteFile(tempDir+"\\subtitles.episode.ass", subtitlesBytes, 0644)
+	err = ioutil.WriteFile("subtitles.episode.ass", subtitlesBytes, 0644)
 	if err != nil {
 		return anirip.Error{Message: "There was an error while writing the subtitles to file", Err: err}
 	}

@@ -8,13 +8,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -149,15 +146,15 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 }
 
 // Downloads entire FLV episodes to our temp directory
-func (episode *CrunchyrollEpisode) DownloadEpisode(quality, engineDir, tempDir string, cookies []*http.Cookie) error {
+func (episode *CrunchyrollEpisode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file / will retry up to 5 times
-	err := episode.dumpEpisodeFLV(engineDir, tempDir, 5)
+	err := episode.dumpEpisodeFLV()
 	if err != nil {
 		return err
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename(tempDir+"\\incomplete.episode.flv", tempDir+"\\episode.mkv", 10); err != nil {
+	if err := anirip.Rename("incomplete.episode.flv", "episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -169,18 +166,12 @@ func (episode *CrunchyrollEpisode) GetFileName() string {
 }
 
 // Calls rtmpdump.exe to dump the episode and names it
-func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i int) error {
+func (episode *CrunchyrollEpisode) dumpEpisodeFLV() error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + "\\incomplete.episode.flv")
+	os.Remove("incomplete.episode.flv")
 
-	// Gets the path of our rtmp dump exe
-	path, err := filepath.Abs(engineDir + "\\rtmpdump.exe")
-	if err != nil {
-		return anirip.Error{Message: "Unable to find rtmpdump.exe in \\" + engineDir + "\\ directory", Err: err}
-	}
-
-	// Creates the command which we will use to dump the episode
-	cmd := exec.Command(path,
+	// Executes the command which we will use to dump the episode
+	if err := exec.Command("rtmpdump",
 		"-r", episode.MediaInfo.URLOne,
 		"-a", episode.MediaInfo.URLTwo,
 		"-f", "WIN 19,0,0,245",
@@ -188,67 +179,10 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV(engineDir, tempDir string, i i
 		"-m", "10",
 		"-p", episode.URL,
 		"-y", episode.MediaInfo.File,
-		"-o", "incomplete.episode.flv")
-	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
+		"-o", "incomplete.episode.flv").Run(); err != nil {
 		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}
 	}
-
-	// Spins up goroutine to wait for the coommand to finish
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	// Checks for rtmpdump hangs
-	videoSize := int64(0)
-	for {
-		select {
-		case <-time.After(10 * time.Second):
-			// Gets the video file
-			video, err := os.Open(tempDir + "\\incomplete.episode.flv")
-			if err != nil {
-				continue
-			}
-			// Gets info on the video file
-			videoInfo, err := video.Stat()
-			if err != nil {
-				continue
-			}
-			video.Close()
-			// Checks to be sure the download is still progressing
-			if videoInfo.Size() > videoSize {
-				videoSize = videoInfo.Size()
-				continue
-			} else if !cmd.ProcessState.Exited() {
-				// Kills the process and restarts if the download is hanging
-				if err := cmd.Process.Kill(); err != nil {
-					return anirip.Error{Message: "There was an error killing the child process", Err: err}
-				}
-				// Recursively recalls dumpEpisodeFLV i number of times
-				if i > 0 {
-					color.Yellow("\n> Download is hanging, retrying...\n")
-					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
-					continue
-				}
-				return anirip.Error{Message: "Episode failed to download...", Err: err}
-			}
-		case err := <-done:
-			if err != nil {
-				// Recursively recalls dumpEpisodeFLV i number of times
-				if i > 0 {
-					color.Yellow("\n> There was an error downloading, retrying...\n")
-					episode.dumpEpisodeFLV(engineDir, tempDir, i-1)
-					continue
-				}
-				return anirip.Error{Message: "Episode failed to download...", Err: err}
-			}
-			return nil
-		}
-	}
+	return nil
 }
 
 // Figures out what the format of the video should be based on crunchyroll xml

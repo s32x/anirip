@@ -16,13 +16,11 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 )
 
@@ -308,15 +306,15 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 }
 
 // Downloads entire FLV episodes to our temp directory
-func (episode *DaisukiEpisode) DownloadEpisode(quality, engineDir string, tempDir string, cookies []*http.Cookie) error {
+func (episode *DaisukiEpisode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file
-	err := episode.dumpEpisodeFLV(quality, engineDir, tempDir, 5)
+	err := episode.dumpEpisodeFLV(quality)
 	if err != nil {
 		return err
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename(tempDir+"\\incomplete.episode.flv", tempDir+"\\episode.mkv", 10); err != nil {
+	if err := anirip.Rename("incomplete.episode.flv", "episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -328,89 +326,21 @@ func (episode *DaisukiEpisode) GetFileName() string {
 }
 
 // Calls on AdobeHDS.php to dump the episode and name it
-func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string, engineDir, tempDir string, i int) error {
+func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string) error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + "\\incomplete.episode.flv")
-
+	os.Remove("incomplete.episode.flv")
 	episode.Quality = quality // Sets the quality to the passed quality string
 
-	// Gets the path of php and our adobeHDS php fil
-	phpPath, err := filepath.Abs(engineDir + "\\php\\php.exe")
-	if err != nil {
-		return anirip.Error{Message: "Unable to find php.exe in \\" + engineDir + "\\php\\ directory", Err: err}
-	}
-	adobeHDSPath, err := filepath.Abs(engineDir + "\\AdobeHDS.php")
-	if err != nil {
-		return anirip.Error{Message: "Unable to find adobeHDS in \\" + engineDir + "\\ directory", Err: err}
-	}
-
 	// Executes the dump command and gets the episode
-	cmd := exec.Command(phpPath, adobeHDSPath,
+	if err := exec.Command("php", "AdobeHDS.php",
 		"--manifest", episode.MediaInfo.ManifestURL+"&g="+generateGUID(12)+"&hdcore=3.2.0",
 		"--outfile", "incomplete.episode",
 		"--quality", "high",
 		"--referrer", episode.URL,
-		"--rename", "--delete")
-	cmd.Dir = tempDir // Sets working directory to temp so our fragments end up there
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}
+		"--rename", "--delete").Run(); err != nil {
+		return anirip.Error{Message: "There was an error while running the AdobeHDS script...", Err: err}
 	}
-
-	// Spins up goroutine to wait for the coommand to finish
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	// Checks for AdobeHDS hangs
-	videoSize := int64(0)
-	for {
-		select {
-		case <-time.After(10 * time.Second):
-			// Gets the video file
-			video, err := os.Open(tempDir + "\\incomplete.episode.flv")
-			if err != nil {
-				continue
-			}
-			// Gets info on the video file
-			videoInfo, err := video.Stat()
-			if err != nil {
-				continue
-			}
-			video.Close()
-			// Checks to be sure the download is still progressing
-			if videoInfo.Size() > videoSize {
-				videoSize = videoInfo.Size()
-				continue
-			} else if !cmd.ProcessState.Exited() {
-				// Kills the process and restarts if the download is hanging
-				if err := cmd.Process.Kill(); err != nil {
-					return anirip.Error{Message: "There was an error killing the child process", Err: err}
-				}
-				// Recursively recalls dumpEpisodeFLV i number of times
-				if i > 0 {
-					color.Yellow("\n> Download is hanging, retrying...\n")
-					episode.dumpEpisodeFLV(quality, engineDir, tempDir, i-1)
-					continue
-				}
-				return anirip.Error{Message: "Episode failed to download...", Err: err}
-			}
-		case err := <-done:
-			if err != nil {
-				// Recursively recalls dumpEpisodeFLV i number of times
-				if i > 0 {
-					color.Yellow("\n> There was an error downloading, retrying...\n")
-					episode.dumpEpisodeFLV(quality, engineDir, tempDir, i-1)
-					continue
-				}
-				return anirip.Error{Message: "Episode failed to download...", Err: err}
-			}
-			return nil
-		}
-	}
+	return nil
 }
 
 // Generates a random GUID of n length for use in our Manifest URL

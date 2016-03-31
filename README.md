@@ -17,7 +17,7 @@ anirip help
 
 **3) (for Daisuki support)** Install and correctly configure [`PHP`](http://php.net/get/php-5.6.19.tar.bz2/from/a/mirror) (5.6.xx). Specifically, make sure to follow [this guide](https://github.com/K-S-V/Scripts/wiki#installing-php-for-dummies-windows-only) and use the ```php.ini``` file provided in the guide. Also make sure to store the [`AdobeHDS.php`](https://raw.githubusercontent.com/K-S-V/Scripts/master/AdobeHDS.php) script in the same directory as our ANIRip.exe.
 
-**4) (for Crunchyroll support)** Install [`rtmpdump`](https://rtmpdump.mplayerhq.hu/). To use ANIRip on Crunchyroll you will need a patched rtmpdump that supports Handshake 10. Due to legal reasons I cannot provide you with a link to that nor can I confirm that I have even tested with it.
+**4) (for Crunchyroll support)** Install [`rtmpdump`](https://github.com/K-S-V/Scripts/releases/tag/v2.4). To use ANIRip on Crunchyroll you will need a patched rtmpdump that supports Handshake 10. 
 
 **5)** Clone the `ANIRip` repository or [download the latest release](https://github.com/sdwolfe32/ANIRip/releases).
 

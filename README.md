@@ -4,14 +4,17 @@ A Crunchyroll & Daisuki episode/subtitle ripper written in GO
 ![alt text](/images/anirip130.jpg "ANIRip v1.3.0 Screenshot")
 
 ## Usage
-To download videos from CrunchyRoll (Note: You only need to login once):
+To login to a provider (Note: You only need to login once):
 ```
 anirip login --user dankUsername69 --pass str8c4s497 crunchyroll
-anirip http://www.crunchyroll.com/bladedance-of-elementalers
 ```
-To download videos from Daisuki (Note: You only need to login once):
+or
 ```
 anirip login -u dai5uk1ISLyf -p Yes2325235 daisuki
+```
+To download videos from Daisuki and CrunchyRoll (Note: You only need to login once):
+```
+anirip http://www.crunchyroll.com/strike-the-blood
 anirip --trim daisuki http://www.daisuki.net/us/en/anime/detail.ONEPUNCHMAN.html
 ```
 To clear all temporary ANIRip files on the system:

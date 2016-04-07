@@ -146,15 +146,15 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 }
 
 // Downloads entire FLV episodes to our temp directory
-func (episode *CrunchyrollEpisode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
+func (episode *CrunchyrollEpisode) DownloadEpisode(quality, tempDir string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file / will retry up to 5 times
-	err := episode.dumpEpisodeFLV()
+	err := episode.dumpEpisodeFLV(tempDir)
 	if err != nil {
 		return err
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename("incomplete.episode.flv", "episode.mkv", 10); err != nil {
+	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"incomplete.episode.flv", tempDir+string(os.PathSeparator)+"episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -166,12 +166,12 @@ func (episode *CrunchyrollEpisode) GetFileName() string {
 }
 
 // Calls rtmpdump.exe to dump the episode and names it
-func (episode *CrunchyrollEpisode) dumpEpisodeFLV() error {
+func (episode *CrunchyrollEpisode) dumpEpisodeFLV(tempDir string) error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove("incomplete.episode.flv")
+	os.Remove(tempDir + string(os.PathSeparator) + "incomplete.episode.flv")
 
 	// Executes the command which we will use to dump the episode
-	if err := exec.Command("rtmpdump",
+	cmd := exec.Command(anirip.FindAbsoluteBinary("rtmpdump"),
 		"-r", episode.MediaInfo.URLOne,
 		"-a", episode.MediaInfo.URLTwo,
 		"-f", "WIN 19,0,0,245",
@@ -179,9 +179,12 @@ func (episode *CrunchyrollEpisode) dumpEpisodeFLV() error {
 		"-m", "10",
 		"-p", episode.URL,
 		"-y", episode.MediaInfo.File,
-		"-o", "incomplete.episode.flv").Run(); err != nil {
+		"-o", "incomplete.episode.flv")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
 		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}
 	}
+
 	return nil
 }
 

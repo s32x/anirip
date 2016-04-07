@@ -20,9 +20,9 @@ type CrunchyrollSession struct {
 }
 
 // Attempts to log the user in, store a cookie and return the login status
-func (session *CrunchyrollSession) Login(user, pass string) error {
+func (session *CrunchyrollSession) Login(user, pass, tempDir string) error {
 	// First checks to see if we already have a cookie config
-	exists, err := getStoredCookies(session)
+	exists, err := getStoredCookies(session, tempDir)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (session *CrunchyrollSession) Login(user, pass string) error {
 		}
 
 		// Writes cookies to cookies file
-		err := ioutil.WriteFile("crunchyroll.cookie", sessionBytes.Bytes(), 0644)
+		err := ioutil.WriteFile(tempDir+string(os.PathSeparator)+"crunchyroll.cookie", sessionBytes.Bytes(), 0644)
 		if err != nil {
 			return anirip.Error{Message: "There was an error writing cookies to file", Err: err}
 		}
@@ -71,13 +71,13 @@ func (session *CrunchyrollSession) GetCookies() []*http.Cookie {
 }
 
 // Gets stored cookies found in cookiesFile
-func getStoredCookies(session *CrunchyrollSession) (bool, error) {
+func getStoredCookies(session *CrunchyrollSession, tempDir string) (bool, error) {
 	// Checks if file exists - will return it's contents if so
-	if _, err := os.Stat("crunchyroll.cookie"); err == nil {
-		sessionBytes, err := ioutil.ReadFile("crunchyroll.cookie")
+	if _, err := os.Stat(tempDir + string(os.PathSeparator) + "crunchyroll.cookie"); err == nil {
+		sessionBytes, err := ioutil.ReadFile(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("crunchyroll.cookie")
+			_ = os.Remove(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
 			return false, anirip.Error{Message: "There was an error reading your cookies file", Err: err}
 		}
 
@@ -89,7 +89,7 @@ func getStoredCookies(session *CrunchyrollSession) (bool, error) {
 		err = sessionDecoder.Decode(&session)
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove("crunchyroll.cookie")
+			_ = os.Remove(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
 			return false, anirip.Error{Message: "There was an error decoding your cookies file", Err: err}
 		}
 		// Cookies are able to be decoded so return true

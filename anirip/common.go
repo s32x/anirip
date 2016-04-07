@@ -2,11 +2,13 @@ package anirip
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-// A rename func that retries 10 times before returning an error
+// Rename func that retries 10 times before returning an error
 func Rename(sourcesFile, destinationFile string, i int) error {
 	// Attempts a rename and if it fails, it will retry i times
 	if err := os.Rename(sourcesFile, destinationFile); err != nil {
@@ -45,4 +47,22 @@ func CleanFileName(fileName string) string {
 	}
 	newFileName = strings.Replace(newFileName, "  ", " ", -1) // Replaces double spaces with a single space
 	return newFileName
+}
+
+// Attempts to search, find, and return the absolute path of a given binary
+func FindAbsoluteBinary(binaryName string) string {
+	// Searches for the binary whether it be in the path or relative
+	lookPath, err := exec.LookPath(binaryName)
+	if err != nil {
+		lookPath = binaryName
+	}
+
+	// Makes our path absolute regardless of where it is
+	absPath, err := filepath.Abs(lookPath)
+	if err != nil {
+		absPath = binaryName
+	}
+
+	// Returns the absolute path to the binary we're looking to utilize
+	return absPath
 }

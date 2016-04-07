@@ -306,15 +306,15 @@ func (episode *DaisukiEpisode) GetEpisodeInfo(quality string, cookies []*http.Co
 }
 
 // Downloads entire FLV episodes to our temp directory
-func (episode *DaisukiEpisode) DownloadEpisode(quality string, cookies []*http.Cookie) error {
+func (episode *DaisukiEpisode) DownloadEpisode(quality, tempDir string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file
-	err := episode.dumpEpisodeFLV(quality)
+	err := episode.dumpEpisodeFLV(quality, tempDir)
 	if err != nil {
 		return err
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename("incomplete.episode.flv", "episode.mkv", 10); err != nil {
+	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"incomplete.episode.flv", tempDir+string(os.PathSeparator)+"episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
@@ -326,18 +326,20 @@ func (episode *DaisukiEpisode) GetFileName() string {
 }
 
 // Calls on AdobeHDS.php to dump the episode and name it
-func (episode *DaisukiEpisode) dumpEpisodeFLV(quality string) error {
+func (episode *DaisukiEpisode) dumpEpisodeFLV(quality, tempDir string) error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove("incomplete.episode.flv")
+	os.Remove(tempDir + string(os.PathSeparator) + "incomplete.episode.flv")
 	episode.Quality = quality // Sets the quality to the passed quality string
 
 	// Executes the dump command and gets the episode
-	if err := exec.Command("php", "AdobeHDS.php",
+	cmd := exec.Command(anirip.FindAbsoluteBinary("php"), tempDir+string(os.PathSeparator)+"AdobeHDS.php",
 		"--manifest", episode.MediaInfo.ManifestURL+"&g="+generateGUID(12)+"&hdcore=3.2.0",
 		"--outfile", "incomplete.episode",
 		"--quality", "high",
 		"--referrer", episode.URL,
-		"--rename", "--delete").Run(); err != nil {
+		"--rename", "--delete")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
 		return anirip.Error{Message: "There was an error while running the AdobeHDS script...", Err: err}
 	}
 	return nil

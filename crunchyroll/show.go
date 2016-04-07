@@ -61,7 +61,7 @@ func (show *CrunchyrollShow) ScrapeEpisodes(showURL string, cookies []*http.Cook
 	showResponse, err := anirip.GetHTTPResponse("GET",
 		showURL,
 		nil,
-		http.Header{},
+		nil,
 		cookies)
 	if err != nil {
 		return err

@@ -3,7 +3,7 @@ package anirip
 import "net/http"
 
 type Session interface {
-	Login(string, string) error
+	Login(string, string, string) error
 	GetCookies() []*http.Cookie
 }
 
@@ -24,7 +24,7 @@ type Episodes []Episode
 
 type Episode interface {
 	GetEpisodeInfo(string, []*http.Cookie) error
-	DownloadEpisode(string, []*http.Cookie) error
-	DownloadSubtitles(string, int, []*http.Cookie) (string, error)
+	DownloadEpisode(string, string, []*http.Cookie) error
+	DownloadSubtitles(string, int, string, []*http.Cookie) (string, error)
 	GetFileName() string
 }

@@ -52,7 +52,7 @@ func (show *DaisukiShow) ScrapeEpisodes(showURL string, cookies []*http.Cookie) 
 	showResponse, err := anirip.GetHTTPResponse("GET",
 		showURL,
 		nil,
-		http.Header{},
+		nil,
 		cookies)
 	if err != nil {
 		return err

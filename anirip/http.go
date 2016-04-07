@@ -14,7 +14,11 @@ func GetHTTPResponse(method, urlStr string, body io.Reader, header http.Header, 
 	}
 
 	// Sets the headers passed as the request headers
-	request.Header = header
+	if header != nil {
+		request.Header = header
+	} else {
+		request.Header = http.Header{}
+	}
 	request.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
 
 	// Attaches all cookies passed

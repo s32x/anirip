@@ -115,28 +115,3 @@ func mergeSubtitles(audioLang, subtitleLang, tempDir string) error {
 	os.Remove(tempDir + string(os.PathSeparator) + "unmerged.episode.mkv")
 	return nil
 }
-
-// Cleans up the mkv, optimizing it for playback
-func cleanMKV(tempDir string) error {
-	// Removes a stale temp file to avoid conflcts in func
-	os.Remove(tempDir + string(os.PathSeparator) + "dirty.episode.mkv")
-
-	// Recursively retries rename to temp filename before execution
-	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv", tempDir+string(os.PathSeparator)+"dirty.episode.mkv", 10); err != nil {
-		return err
-	}
-
-	// Executes the command which we will use to clean our mkv to "video.clean.mkv"
-	cmd := exec.Command(anirip.FindAbsoluteBinary("mkclean"),
-		"--optimize",
-		"dirty.episode.mkv",
-		"episode.mkv")
-	cmd.Dir = tempDir
-	if err := cmd.Run(); err != nil {
-		return anirip.Error{Message: "There was an error while optimizing our mkv", Err: err}
-	}
-
-	// Deletes the old, un-needed dirty mkv file
-	os.Remove(tempDir + string(os.PathSeparator) + "dirty.episode.mkv")
-	return nil
-}

@@ -38,9 +38,9 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "ANIRip"
-	app.Author = "Viz_"
-	app.Email = "vizicore@gmail.com"
-	app.Version = "v1.3.1(4/4/2016)"
+	app.Author = "Steven Wolfe"
+	app.Email = "steven@swolfe.me"
+	app.Version = "v1.3.2(4/12/2016)"
 	app.Usage = "Crunchyroll/Daisuki show ripper CLI"
 	color.Cyan(app.Name + " " + app.Version + " - by " + app.Author + " <" + app.Email + ">\n")
 	app.Flags = []cli.Flag{
@@ -129,7 +129,7 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		if c.NArg() == 0 {
-			color.Red("[ANIRip] No show URL provided.")
+			color.Red("[ANIRip] No show URLs provided.")
 			return
 		}
 

@@ -8,6 +8,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
@@ -368,10 +369,10 @@ func generateKey(subtitleID int) []byte {
 	// Does some dank maths to calculate the location of waldo
 	eq1 := int(math.Floor((math.Sqrt(6.9) * math.Pow(2, 25)))) ^ subtitleID
 	eq2 := int(math.Floor(math.Sqrt(6.9) * math.Pow(2, 25)))
-	eq3 := (subtitleID ^ eq2) ^ (subtitleID^eq2)>>3 ^ eq1*32
+	eq3 := uint32((subtitleID ^ eq2) ^ (subtitleID^eq2)>>3 ^ eq1*32)
 
 	// Creates a 160-Bit SHA1 hash
-	hashData := []byte(createString([]int{20, 97, 1, 2}) + strconv.Itoa(eq3))
+	hashData := []byte(createString([]int{20, 97, 1, 2}) + fmt.Sprint(eq3))
 	shortHashArray := sha1.Sum(hashData)
 
 	// Transforms shortHashArray into 256bit in case a 256bit key is requested

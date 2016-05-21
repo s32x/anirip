@@ -25,7 +25,7 @@ anirip help
 ### Setup Guide
 **1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) and [`mkvtoolnix`](https://mkvtoolnix.download/downloads.html) if they are not already installed on your system. We will used these tools primarily for trimming and editing video metadata.
 
-**2) (for Daisuki support)** Install and correctly configure [`PHP`](http://php.net/get/php-5.6.19.tar.bz2/from/a/mirror) (5.6.xx). Specifically, make sure to follow [this guide](https://github.com/K-S-V/Scripts/wiki#installing-php-for-dummies-windows-only) and use the ```php.ini``` file provided in the guide.
+**2) (for Daisuki support)** Install and correctly configure [`PHP`](http://windows.php.net/download/) (5.6.xx). Specifically, make sure to follow [this guide](https://github.com/K-S-V/Scripts/wiki#installing-php-for-dummies-windows-only) and use the ```php.ini``` file provided in the guide.
 
 **3) (for Crunchyroll support)** Install [`rtmpdump`](https://github.com/K-S-V/Scripts/releases). To use ANIRip on Crunchyroll you will need a patched rtmpdump that supports Handshake 10.
 

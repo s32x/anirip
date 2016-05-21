@@ -1,5 +1,3 @@
-//go:generate goversioninfo -icon=icon.ico
-
 package main
 
 import (
@@ -40,7 +38,7 @@ func main() {
 	app.Name = "ANIRip"
 	app.Author = "Steven Wolfe"
 	app.Email = "steven@swolfe.me"
-	app.Version = "v1.3.2(4/12/2016)"
+	app.Version = "v1.3.3(5/21/2016)"
 	app.Usage = "Crunchyroll/Daisuki show ripper CLI"
 	color.Cyan(app.Name + " " + app.Version + " - by " + app.Author + " <" + app.Email + ">\n")
 	app.Flags = []cli.Flag{
@@ -82,14 +80,14 @@ func main() {
 					Destination: &password,
 				},
 			},
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				// Gets the provider name from the cli argument
 				provider := ""
 				if c.NArg() > 0 {
 					provider = c.Args()[0]
 				} else {
 					color.Red("[ANIRip] No provider given...")
-					return
+					return anirip.Error{Message: "No provider given"}
 				}
 
 				// Creates session with cookies to store in file
@@ -102,35 +100,37 @@ func main() {
 					session = new(daisuki.DaisukiSession)
 				} else {
 					color.Red("[ANIRip] The given provider is not supported.")
-					return
+					return anirip.Error{Message: "The given provider is not supported"}
 				}
 
 				// Performs the login procedure, storing the login information to file
 				if err := session.Login(username, password, tempDir); err != nil {
 					color.Red("[ANIRip] " + err.Error())
-					return
+					return anirip.Error{Message: "Unable to login to provider", Err: err}
 				}
 				color.Green("[ANIRip] Successfully logged in... Cookies saved to " + tempDir)
+				return nil
 			},
 		},
 		{
 			Name:    "clear",
 			Aliases: []string{"c"},
 			Usage:   "erases the temporary directory used for cookies and temp files",
-			Action: func(c *cli.Context) {
+			Action: func(c *cli.Context) error {
 				// Attempts to erase the temporary directory
 				if err := os.RemoveAll(tempDir); err != nil {
 					color.Red("[ANIRip] There was an error erasing the temporary directory : " + err.Error())
-					return
+					return anirip.Error{Message: "There was an error erasing the temporary directory", Err: err}
 				}
 				color.Green("[ANIRip] Successfully erased the temporary directory " + tempDir)
+				return nil
 			},
 		},
 	}
-	app.Action = func(c *cli.Context) {
+	app.Action = func(c *cli.Context) error {
 		if c.NArg() == 0 {
 			color.Red("[ANIRip] No show URLs provided.")
-			return
+			return anirip.Error{Message: "No show URLs provided"}
 		}
 
 		for _, showURL := range c.Args() {
@@ -138,7 +138,7 @@ func main() {
 			url, err := url.Parse(showURL)
 			if err != nil {
 				color.Red("[ANIRip] There was an error parsing the URL you entered.\n")
-				return
+				return anirip.Error{Message: "There was an error parsing the URL you entered"}
 			}
 
 			// Creates the authentication & show objects for the provider we're ripping from
@@ -152,20 +152,20 @@ func main() {
 				session = new(daisuki.DaisukiSession)
 			} else {
 				color.Red("[ANIRip] The URL provided is not supported.")
-				return
+				return anirip.Error{Message: "The URL provided is not supported"}
 			}
 
 			// Performs the generic login procedure
 			if err = session.Login(username, password, tempDir); err != nil {
 				color.Red("[ANIRip] " + err.Error())
-				return
+				return anirip.Error{Message: "Unable to login to provider", Err: err}
 			}
 
 			// Attempts to scrape the shows metadata/information
 			color.White("[ANIRip] Getting a list of episodes for the show...")
 			if err = show.ScrapeEpisodes(showURL, session.GetCookies()); err != nil {
 				color.Red("[ANIRip] " + err.Error())
-				return
+				return anirip.Error{Message: "Unable to get episodes", Err: err}
 			}
 
 			// Sets the boolean values for what intros we would like to trim
@@ -275,6 +275,7 @@ func main() {
 			}
 			color.Cyan("[ANIRip] Completed processing episodes for " + show.GetTitle() + "\n")
 		}
+		return nil
 	}
 	app.Run(os.Args)
 }

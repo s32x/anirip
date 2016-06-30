@@ -72,6 +72,27 @@ func trimMKV(adLength int, tempDir string) error {
 	return nil
 }
 
+// Cleans the MKVs metadata for better reading by clients
+func cleanMKV(tempDir string) error {
+	// Recursively retries rename to temp filename before execution
+	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv", tempDir+string(os.PathSeparator)+"dirty.episode.mkv", 10); err != nil {
+		return err
+	}
+
+	// Executes the clean of our temporary dirty mkv
+	cmd := exec.Command(anirip.FindAbsoluteBinary("mkclean"),
+		"dirty.episode.mkv",
+		"episode.mkv")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		return anirip.Error{Message: "There was an error while cleaning video", Err: err}
+	}
+
+	// Removes the temporary files we created as they are no longer needed
+	os.Remove(tempDir + string(os.PathSeparator) + "dirty.episode.mkv")
+	return nil
+}
+
 // Merges a VIDEO.mkv and a VIDEO.ass
 func mergeSubtitles(audioLang, subtitleLang, tempDir string) error {
 	// Removes a stale temp files to avoid conflcts in func

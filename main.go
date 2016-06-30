@@ -265,6 +265,13 @@ func main() {
 						continue
 					}
 
+					// Cleans the MKVs metadata for better reading by clients
+					color.White("[ANIRip] Cleaning MKV...\n")
+					if err := cleanMKV(tempDir); err != nil {
+						color.Red("[ANIRip] " + err.Error() + "\n")
+						continue
+					}
+
 					// Moves the episode to the appropriate season sub-directory
 					if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv",
 						show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()]+string(os.PathSeparator)+episode.GetFileName()+".mkv", 10); err != nil {

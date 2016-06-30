@@ -14,6 +14,10 @@ To download videos from Daisuki and CrunchyRoll (Note: You only need to login on
 anirip http://www.crunchyroll.com/strike-the-blood
 anirip --trim daisuki http://www.daisuki.net/us/en/anime/detail.ONEPUNCHMAN.html
 ```
+To download multiple shows just add more urls:
+```
+anirip http://www.crunchyroll.com/strike-the-blood http://www.crunchyroll.com/god-eater http://www.crunchyroll.com/attack-on-titan
+```
 To clear all temporary ANIRip files on the system:
 ```
 anirip clear

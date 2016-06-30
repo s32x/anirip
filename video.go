@@ -17,7 +17,7 @@ func trimMKV(adLength int, tempDir string) error {
 	os.Remove(tempDir + string(os.PathSeparator) + "split.episode-002.mkv")
 	os.Remove(tempDir + string(os.PathSeparator) + "list.episode.txt")
 
-	// Recursively retries rename to temp filename before execution
+	// Rename to temp filename before execution
 	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv", tempDir+string(os.PathSeparator)+"untrimmed.episode.mkv", 10); err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func trimMKV(adLength int, tempDir string) error {
 
 // Cleans the MKVs metadata for better reading by clients
 func cleanMKV(tempDir string) error {
-	// Recursively retries rename to temp filename before execution
+	// Rename to temp filename before execution
 	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv", tempDir+string(os.PathSeparator)+"dirty.episode.mkv", 10); err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func mergeSubtitles(audioLang, subtitleLang, tempDir string) error {
 	// Removes a stale temp files to avoid conflcts in func
 	os.Remove(tempDir + string(os.PathSeparator) + "unmerged.episode.mkv")
 
-	// Recursively retries rename to temp filename before execution
+	// Rename to temp filename before execution
 	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv", tempDir+string(os.PathSeparator)+"unmerged.episode.mkv", 10); err != nil {
 		return err
 	}

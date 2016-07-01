@@ -201,7 +201,7 @@ func getVideoFormat(quality string) string {
 		return "106"
 	case strings.Contains(format, "1080"):
 		return "108"
-	case strings.Contains(format, "highest"):
+	case strings.Contains(format, "default"):
 		return "0"
 	default:
 		return "0"
@@ -221,7 +221,7 @@ func getVideoQuality(quality string) string {
 		return "62"
 	case strings.Contains(resolution, "1080"):
 		return "80"
-	case strings.Contains(resolution, "highest"):
+	case strings.Contains(resolution, "default"):
 		return "0"
 	default:
 		return "0"

@@ -56,7 +56,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "trim, t",
-			Value:       "daisuki,aniplex,sunrise",
+			Value:       "",
 			Usage:       "desired intros to be trimmed off of final video",
 			Destination: &trim,
 		},

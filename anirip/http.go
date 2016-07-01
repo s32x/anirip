@@ -19,7 +19,7 @@ func GetHTTPResponse(method, urlStr string, body io.Reader, header http.Header, 
 	} else {
 		request.Header = http.Header{}
 	}
-	request.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36")
+	request.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36")
 
 	// Attaches all cookies passed
 	for _, cookie := range cookies {

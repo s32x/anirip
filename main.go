@@ -58,7 +58,7 @@ func main() {
 			Name:        "trim, t",
 			Value:       "daisuki,aniplex,sunrise",
 			Usage:       "desired intros to be trimmed off of final video",
-			Destination: &quality,
+			Destination: &trim,
 		},
 	}
 	app.Commands = []cli.Command{

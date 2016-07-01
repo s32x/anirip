@@ -87,8 +87,8 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 	standardConfigReqHeaders.Add("Host", "www.crunchyroll.com")
 	standardConfigReqHeaders.Add("Origin", "http://static.ak.crunchyroll.com")
 	standardConfigReqHeaders.Add("Content-type", "application/x-www-form-urlencoded")
-	standardConfigReqHeaders.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
-	standardConfigReqHeaders.Add("X-Requested-With", "ShockwaveFlash/19.0.0.245")
+	standardConfigReqHeaders.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.f3770232.swf")
+	standardConfigReqHeaders.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
 	standardConfigResponse, err := anirip.GetHTTPResponse("POST",
 		"http://www.crunchyroll.com/xml/?"+queryString.Encode(),
 		bytes.NewBufferString(formData.Encode()),

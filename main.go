@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/codegangsta/cli"
 	"github.com/fatih/color"
 	"github.com/sdwolfe32/ANIRip/anirip"
 	"github.com/sdwolfe32/ANIRip/crunchyroll"
 	"github.com/sdwolfe32/ANIRip/daisuki"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (

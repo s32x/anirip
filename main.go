@@ -38,7 +38,7 @@ func main() {
 	app.Name = "ANIRip"
 	app.Author = "Steven Wolfe"
 	app.Email = "steven@swolfe.me"
-	app.Version = "v1.3.3(5/21/2016)"
+	app.Version = "v1.4.0(7/7/2016)"
 	app.Usage = "Crunchyroll/Daisuki show ripper CLI"
 	color.Cyan(app.Name + " " + app.Version + " - by " + app.Author + " <" + app.Email + ">\n")
 	app.Flags = []cli.Flag{

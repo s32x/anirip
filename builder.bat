@@ -13,6 +13,6 @@ cd..
 go get
 go install
 go generate
-go build -o ANIRip.exe
+go build -o anirip.exe
 
 echo "FINISHED ANIRIP BUILD SCRIPT"

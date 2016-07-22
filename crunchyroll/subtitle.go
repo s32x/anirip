@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sdwolfe32/ANIRip/anirip"
+	"github.com/sdwolfe32/anirip/anirip"
 )
 
 type SubListResults struct {

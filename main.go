@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/sdwolfe32/ANIRip/anirip"
-	"github.com/sdwolfe32/ANIRip/crunchyroll"
-	"github.com/sdwolfe32/ANIRip/daisuki"
+	"github.com/sdwolfe32/anirip/anirip"
+	"github.com/sdwolfe32/anirip/crunchyroll"
+	"github.com/sdwolfe32/anirip/daisuki"
 	"gopkg.in/urfave/cli.v1"
 )
 
 var (
-	tempDir = os.TempDir() + string(os.PathSeparator) + "ANIRip"
+	tempDir = os.TempDir() + string(os.PathSeparator) + "anirip"
 )
 
 const (
@@ -35,7 +35,7 @@ func main() {
 	sunriseIntroTrim := false
 
 	app := cli.NewApp()
-	app.Name = "ANIRip"
+	app.Name = "anirip"
 	app.Author = "Steven Wolfe"
 	app.Email = "steven@swolfe.me"
 	app.Version = "v1.4.0(7/7/2016)"
@@ -86,29 +86,29 @@ func main() {
 				if c.NArg() > 0 {
 					provider = c.Args()[0]
 				} else {
-					color.Red("[ANIRip] No provider given...")
+					color.Red("[anirip] No provider given...")
 					return anirip.Error{Message: "No provider given"}
 				}
 
 				// Creates session with cookies to store in file
 				var session anirip.Session
 				if strings.Contains(provider, "crunchyroll") {
-					color.Cyan("[ANIRip] Logging to CrunchyRoll as " + username + "...")
+					color.Cyan("[anirip] Logging to CrunchyRoll as " + username + "...")
 					session = new(crunchyroll.CrunchyrollSession)
 				} else if strings.Contains(provider, "daisuki") {
-					color.Cyan("[ANIRip] Logging to Daisuki as " + username + "...")
+					color.Cyan("[anirip] Logging to Daisuki as " + username + "...")
 					session = new(daisuki.DaisukiSession)
 				} else {
-					color.Red("[ANIRip] The given provider is not supported.")
+					color.Red("[anirip] The given provider is not supported.")
 					return anirip.Error{Message: "The given provider is not supported"}
 				}
 
 				// Performs the login procedure, storing the login information to file
 				if err := session.Login(username, password, tempDir); err != nil {
-					color.Red("[ANIRip] " + err.Error())
+					color.Red("[anirip] " + err.Error())
 					return anirip.Error{Message: "Unable to login to provider", Err: err}
 				}
-				color.Green("[ANIRip] Successfully logged in... Cookies saved to " + tempDir)
+				color.Green("[anirip] Successfully logged in... Cookies saved to " + tempDir)
 				return nil
 			},
 		},
@@ -119,17 +119,17 @@ func main() {
 			Action: func(c *cli.Context) error {
 				// Attempts to erase the temporary directory
 				if err := os.RemoveAll(tempDir); err != nil {
-					color.Red("[ANIRip] There was an error erasing the temporary directory : " + err.Error())
+					color.Red("[anirip] There was an error erasing the temporary directory : " + err.Error())
 					return anirip.Error{Message: "There was an error erasing the temporary directory", Err: err}
 				}
-				color.Green("[ANIRip] Successfully erased the temporary directory " + tempDir)
+				color.Green("[anirip] Successfully erased the temporary directory " + tempDir)
 				return nil
 			},
 		},
 	}
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() == 0 {
-			color.Red("[ANIRip] No show URLs provided.")
+			color.Red("[anirip] No show URLs provided.")
 			return anirip.Error{Message: "No show URLs provided"}
 		}
 
@@ -137,7 +137,7 @@ func main() {
 			// Parses the URL so we can accurately judge the provider based on the host
 			url, err := url.Parse(showURL)
 			if err != nil {
-				color.Red("[ANIRip] There was an error parsing the URL you entered.\n")
+				color.Red("[anirip] There was an error parsing the URL you entered.\n")
 				return anirip.Error{Message: "There was an error parsing the URL you entered"}
 			}
 
@@ -151,20 +151,20 @@ func main() {
 				show = new(daisuki.DaisukiShow)
 				session = new(daisuki.DaisukiSession)
 			} else {
-				color.Red("[ANIRip] The URL provided is not supported.")
+				color.Red("[anirip] The URL provided is not supported.")
 				return anirip.Error{Message: "The URL provided is not supported"}
 			}
 
 			// Performs the generic login procedure
 			if err = session.Login(username, password, tempDir); err != nil {
-				color.Red("[ANIRip] " + err.Error())
+				color.Red("[anirip] " + err.Error())
 				return anirip.Error{Message: "Unable to login to provider", Err: err}
 			}
 
 			// Attempts to scrape the shows metadata/information
-			color.White("[ANIRip] Getting a list of episodes for the show...")
+			color.White("[anirip] Getting a list of episodes for the show...")
 			if err = show.ScrapeEpisodes(showURL, session.GetCookies()); err != nil {
-				color.Red("[ANIRip] " + err.Error())
+				color.Red("[anirip] " + err.Error())
 				return anirip.Error{Message: "Unable to get episodes", Err: err}
 			}
 
@@ -197,34 +197,34 @@ func main() {
 			for _, season := range show.GetSeasons() {
 				os.Mkdir(show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()], 0777)
 				for _, episode := range season.GetEpisodes() {
-					color.White("[ANIRip] Getting Episode Info...\n")
+					color.White("[anirip] Getting Episode Info...\n")
 					if err = episode.GetEpisodeInfo(quality, session.GetCookies()); err != nil {
-						color.Red("[ANIRip] " + err.Error())
+						color.Red("[anirip] " + err.Error())
 						continue
 					}
 
 					// Checks to see if the episode already exists, in which case we continue to the next
 					_, err = os.Stat(show.GetTitle() + string(os.PathSeparator) + seasonMap[season.GetNumber()] + string(os.PathSeparator) + episode.GetFileName() + ".mkv")
 					if err == nil {
-						color.Green("[ANIRip] " + episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n")
+						color.Green("[anirip] " + episode.GetFileName() + ".mkv has already been downloaded successfully..." + "\n")
 						continue
 					}
 
 					subOffset := 0
-					color.Cyan("[ANIRip] Downloading " + episode.GetFileName() + "\n")
+					color.Cyan("[anirip] Downloading " + episode.GetFileName() + "\n")
 					// Downloads full MKV video from stream provider
-					color.White("[ANIRip] Downloading video...\n")
+					color.White("[anirip] Downloading video...\n")
 					if err := episode.DownloadEpisode(quality, tempDir, session.GetCookies()); err != nil {
-						color.Red("[ANIRip] " + err.Error() + "\n")
+						color.Red("[anirip] " + err.Error() + "\n")
 						continue
 					}
 
 					// Trims down the downloaded MKV if the user wants to trim a Daisuki intro
 					if daisukiIntroTrim {
 						subOffset = subOffset + daisukiIntroLength
-						color.White("[ANIRip] Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
+						color.White("[anirip] Trimming off Daisuki Intro - " + strconv.Itoa(daisukiIntroLength) + "ms\n")
 						if err := trimMKV(daisukiIntroLength, tempDir); err != nil {
-							color.Red("[ANIRip] " + err.Error() + "\n")
+							color.Red("[anirip] " + err.Error() + "\n")
 							continue
 						}
 					}
@@ -232,9 +232,9 @@ func main() {
 					// Trims down the downloaded MKV if the user wants to trim an Aniplex intro
 					if aniplexIntroTrim {
 						subOffset = subOffset + aniplexIntroLength
-						color.White("[ANIRip] Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
+						color.White("[anirip] Trimming off Aniplex Intro - " + strconv.Itoa(aniplexIntroLength) + "ms\n")
 						if err := trimMKV(aniplexIntroLength, tempDir); err != nil {
-							color.Red("[ANIRip] " + err.Error() + "\n")
+							color.Red("[anirip] " + err.Error() + "\n")
 							continue
 						}
 					}
@@ -242,33 +242,33 @@ func main() {
 					// Trims down the downloaded MKV if the user wants to trim a Sunrise intro
 					if sunriseIntroTrim {
 						subOffset = subOffset + sunriseIntroLength
-						color.White("[ANIRip] Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
+						color.White("[anirip] Trimming off Sunrise Intro - " + strconv.Itoa(sunriseIntroLength) + "ms\n")
 						if err := trimMKV(sunriseIntroLength, tempDir); err != nil {
-							color.Red("[ANIRip] " + err.Error() + "\n")
+							color.Red("[anirip] " + err.Error() + "\n")
 							continue
 						}
 					}
 
 					// Downloads the subtitles to .ass format and
 					// offsets their times by the passed provided interval
-					color.White("[ANIRip] Downloading subtitles with a total offset of " + strconv.Itoa(subOffset) + "ms...\n")
+					color.White("[anirip] Downloading subtitles with a total offset of " + strconv.Itoa(subOffset) + "ms...\n")
 					subtitleLang, err := episode.DownloadSubtitles(language, subOffset, tempDir, session.GetCookies())
 					if err != nil {
-						color.Red("[ANIRip] " + err.Error() + "\n")
+						color.Red("[anirip] " + err.Error() + "\n")
 						continue
 					}
 
 					// Attempts to merge the downloaded subtitles into the video strea
-					color.White("[ANIRip] Merging subtitles into mkv container...\n")
+					color.White("[anirip] Merging subtitles into mkv container...\n")
 					if err := mergeSubtitles("jpn", subtitleLang, tempDir); err != nil {
-						color.Red("[ANIRip] " + err.Error() + "\n")
+						color.Red("[anirip] " + err.Error() + "\n")
 						continue
 					}
 
 					// Cleans the MKVs metadata for better reading by clients
-					color.White("[ANIRip] Cleaning MKV...\n")
+					color.White("[anirip] Cleaning MKV...\n")
 					if err := cleanMKV(tempDir); err != nil {
-						color.Red("[ANIRip] " + err.Error() + "\n")
+						color.Red("[anirip] " + err.Error() + "\n")
 						continue
 					}
 
@@ -277,10 +277,10 @@ func main() {
 						show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()]+string(os.PathSeparator)+episode.GetFileName()+".mkv", 10); err != nil {
 						color.Red(err.Error() + "\n\n")
 					}
-					color.Green("[ANIRip] Downloading and merging completed successfully.\n")
+					color.Green("[anirip] Downloading and merging completed successfully.\n")
 				}
 			}
-			color.Cyan("[ANIRip] Completed processing episodes for " + show.GetTitle() + "\n")
+			color.Cyan("[anirip] Completed processing episodes for " + show.GetTitle() + "\n")
 		}
 		return nil
 	}
@@ -288,7 +288,7 @@ func main() {
 }
 
 func init() {
-	// Verifies the existance of an ANIRip folder in our temp directory
+	// Verifies the existance of an anirip folder in our temp directory
 	_, err := os.Stat(tempDir)
 	if err != nil {
 		os.Mkdir(tempDir, 0777)
@@ -299,18 +299,18 @@ func init() {
 	if err != nil {
 		adobeHDSResp, err := anirip.GetHTTPResponse("GET", "https://raw.githubusercontent.com/K-S-V/Scripts/master/AdobeHDS.php", nil, nil, nil)
 		if err != nil {
-			color.Red("[ANIRip] There was an error retrieving AdobeHDS.php script from GitHub...")
+			color.Red("[anirip] There was an error retrieving AdobeHDS.php script from GitHub...")
 			return
 		}
 		defer adobeHDSResp.Body.Close()
 		adobeHDSBody, err := ioutil.ReadAll(adobeHDSResp.Body)
 		if err != nil {
-			color.Red("[ANIRip] There was an error reading the AdobeHDS.php body...")
+			color.Red("[anirip] There was an error reading the AdobeHDS.php body...")
 			return
 		}
 		err = ioutil.WriteFile(tempDir+string(os.PathSeparator)+"AdobeHDS.php", adobeHDSBody, 0777)
 		if err != nil {
-			color.Red("[ANIRip] There was an error writing AdobeHDS.php to file...")
+			color.Red("[anirip] There was an error writing AdobeHDS.php to file...")
 			return
 		}
 	}

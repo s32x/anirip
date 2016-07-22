@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sdwolfe32/ANIRip/anirip"
+	"github.com/sdwolfe32/anirip/anirip"
 )
 
 type TT struct {

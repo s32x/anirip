@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/sdwolfe32/ANIRip/anirip"
+	"github.com/sdwolfe32/anirip/anirip"
 )
 
 // Trims the first couple seconds off of the video to remove any logos

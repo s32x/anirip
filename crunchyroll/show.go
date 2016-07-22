@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sdwolfe32/ANIRip/anirip"
+	"github.com/sdwolfe32/anirip/anirip"
 )
 
 type CrunchyrollShow struct {

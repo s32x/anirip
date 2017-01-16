@@ -2,7 +2,6 @@ package crunchyroll
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,66 +14,49 @@ import (
 	"github.com/sdwolfe32/anirip/anirip"
 )
 
-type EpisodeMetaData struct {
-	NoShow           string `json:"noShow"`
-	Class            string `json:"class"`
-	MediaID          string `json:"media_id"`
-	CollectionID     string `json:"collection_id"`
-	SeriesID         string `json:"series_id"`
-	MediaType        string `json:"media_type"`
-	EpisodeNumber    string `json:"episode_number"`
-	Clip             bool   `json:"clip"`
-	URL              string `json:"url"`
-	Name             string `json:"name"`
-	Description      string `json:"description"`
-	ScreenshotImage  string `json:"screenshot_image"`
-	Available        bool   `json:"available"`
-	PremiumAvailable bool   `json:"premium_available"`
-	FreeAvailable    bool   `json:"free_available"`
+// Episode holds all episode metadata desired for downloading
+type Episode struct {
+	ID          int
+	SubtitleID  int
+	Title       string
+	Description string
+	Number      float64
+	Quality     string
+	Path        string
+	URL         string
+	FileName    string
+	StreamURL   string
 }
 
 // Parses the xml and returns what we need from the xml
-func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*http.Cookie) error {
-	episode.Quality = quality // Sets the quality to the passed quality string
+func (e *Episode) GetEpisodeInfo(quality string, cookies []*http.Cookie) error {
+	e.Quality = quality // Sets the quality to the passed quality string
 
 	// Gets the HTML of the episode page
-	episodeReqHeaders := http.Header{}
-	episodeReqHeaders.Add("referer", "http://www.crunchyroll.com/"+strings.Split(episode.Path, "/")[1])
-	episodeResponse, err := anirip.GetHTTPResponse("GET",
-		episode.URL,
-		nil,
-		episodeReqHeaders,
-		cookies)
+	head := http.Header{}
+	head.Add("referer", "http://www.crunchyroll.com/"+strings.Split(e.Path, "/")[1])
+	resp, err := anirip.GetHTTPResponse("GET", e.URL, nil, head, cookies)
 	if err != nil {
 		return err
 	}
 
 	// Creates the goquery document that will be used to scrape for episode metadata
-	episodeDoc, err := goquery.NewDocumentFromResponse(episodeResponse)
+	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
 		return anirip.Error{Message: "There was an error while reading the episode doc", Err: err}
 	}
 
-	// Scrapes the episode metadata from the episode page
-	episodeMetaDataJSON := episodeDoc.Find("script#liftigniter-metadata").First().Text()
-
-	// Parses the metadata json to a MetaData object
-	episodeMetaData := new(EpisodeMetaData)
-	if err := json.Unmarshal([]byte(episodeMetaDataJSON), episodeMetaData); err != nil {
-		return anirip.Error{Message: "There was an error while parsing episode metadata", Err: err}
-	}
-
 	// Formdata to indicate the source page
 	formData := url.Values{
-		"current_page": {episode.URL},
+		"current_page": {e.URL},
 	}
 
 	// Querystring for getting the crunchyroll standard config
 	queryString := url.Values{
 		"req":           {"RpcApiVideoPlayer_GetStandardConfig"},
-		"media_id":      {strconv.Itoa(episode.ID)},
-		"video_format":  {getVideoFormat(episode.Quality)},
-		"video_quality": {getVideoQuality(episode.Quality)},
+		"media_id":      {strconv.Itoa(e.ID)},
+		"video_format":  {getVideoFormat(e.Quality)},
+		"video_quality": {getVideoQuality(e.Quality)},
 		"auto_play":     {"1"},
 		"aff":           {"crunchyroll-website"},
 		"show_pop_out_controls":   {"1"},
@@ -83,27 +65,24 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 	}
 
 	// Performs the HTTP Request that will get the XML
-	standardConfigReqHeaders := http.Header{}
-	standardConfigReqHeaders.Add("Host", "www.crunchyroll.com")
-	standardConfigReqHeaders.Add("Origin", "http://static.ak.crunchyroll.com")
-	standardConfigReqHeaders.Add("Content-type", "application/x-www-form-urlencoded")
-	standardConfigReqHeaders.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.f3770232.swf")
-	standardConfigReqHeaders.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
-	standardConfigResponse, err := anirip.GetHTTPResponse("POST",
-		"http://www.crunchyroll.com/xml/?"+queryString.Encode(),
-		bytes.NewBufferString(formData.Encode()),
-		standardConfigReqHeaders,
-		cookies)
+	head = http.Header{}
+	head.Add("Host", "www.crunchyroll.com")
+	head.Add("Origin", "http://static.ak.crunchyroll.com")
+	head.Add("Content-type", "application/x-www-form-urlencoded")
+	head.Add("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.f3770232.swf")
+	head.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
+	resp, err = anirip.GetHTTPResponse("POST", "http://www.crunchyroll.com/xml/?"+queryString.Encode(),
+		bytes.NewBufferString(formData.Encode()), head, cookies)
 	if err != nil {
 		return err
 	}
 
 	// Gets the xml string from the recieved xml response body
-	standardConfigResponseBody, err := ioutil.ReadAll(standardConfigResponse.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return anirip.Error{Message: "There was an error reading the xml response", Err: err}
 	}
-	xmlString := string(standardConfigResponseBody)
+	xmlString := string(respBody)
 
 	// Checks for an unsupported region first
 	if strings.Contains(xmlString, "<code>") && strings.Contains(xmlString, "</code>") {
@@ -112,74 +91,50 @@ func (episode *CrunchyrollEpisode) GetEpisodeInfo(quality string, cookies []*htt
 		}
 	}
 
-	// Next performs some really basic parsing of the host url
-	xmlHostURL := ""
-	if strings.Contains(xmlString, "<host>") && strings.Contains(xmlString, "</host>") {
-		xmlHostURL = strings.SplitN(strings.SplitN(xmlString, "<host>", 2)[1], "</host>", 2)[0]
-	} else {
-		return anirip.Error{Message: "No hosts were found for the episode", Err: err}
-	}
-
 	// Same type of xml parsing to get the file
-	episodeFile := ""
+	eFile := ""
 	if strings.Contains(xmlString, "<file>") && strings.Contains(xmlString, "</file>") {
-		episodeFile = strings.SplitN(strings.SplitN(xmlString, "<file>", 2)[1], "</file>", 2)[0]
+		eFile = strings.SplitN(strings.SplitN(xmlString, "<file>", 2)[1], "</file>", 2)[0]
 	} else {
 		return anirip.Error{Message: "No hosts were found for the episode", Err: err}
 	}
 
-	// Parses the URL in order to break out the two urls required for dumping
-	url, err := url.Parse(xmlHostURL)
-	if err != nil {
-		return anirip.Error{Message: "There was an error parsing episode information", Err: err}
-	}
-
-	// Sets the RTMP info recieved before returning
-	episode.Title = episodeMetaData.Name
-	episode.FileName = anirip.CleanFileName(episode.FileName + episode.Title) // Updates filename with title that we just scraped
-	episode.MediaInfo = RTMPInfo{
-		File:   episodeFile,
-		URLOne: url.Scheme + "://" + url.Host + url.Path,
-		URLTwo: strings.Trim(url.RequestURI(), "/"),
-	}
+	e.Title = strings.Replace(strings.Replace(doc.Find("#showmedia_about_name").First().Text(), "“", "", -1), "”", "", -1)
+	e.FileName = anirip.CleanFileName(e.FileName + e.Title) // Updates filename with title that we just scraped
+	e.StreamURL = strings.Replace(eFile, "amp;", "", -1)
 	return nil
 }
 
 // Downloads entire FLV episodes to our temp directory
-func (episode *CrunchyrollEpisode) DownloadEpisode(quality, tempDir string, cookies []*http.Cookie) error {
+func (e *Episode) DownloadEpisode(quality, tempDir string, cookies []*http.Cookie) error {
 	// Attempts to dump the FLV of the episode to file / will retry up to 5 times
-	err := episode.dumpEpisodeFLV(tempDir)
+	err := e.dumpEpisodeFLV(tempDir)
 	if err != nil {
 		return err
 	}
 
 	// Finally renames the dumped FLV to an MKV
-	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"incomplete.episode.flv", tempDir+string(os.PathSeparator)+"episode.mkv", 10); err != nil {
+	if err := anirip.Rename(tempDir+string(os.PathSeparator)+"incomplete.episode.mkv", tempDir+string(os.PathSeparator)+"episode.mkv", 10); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Gets the filename of the episode for referencing outside of this lib
-func (episode *CrunchyrollEpisode) GetFileName() string {
-	return episode.FileName
+func (e *Episode) GetFileName() string {
+	return e.FileName
 }
 
 // Calls rtmpdump.exe to dump the episode and names it
-func (episode *CrunchyrollEpisode) dumpEpisodeFLV(tempDir string) error {
+func (e *Episode) dumpEpisodeFLV(tempDir string) error {
 	// Remove stale temp file to avoid conflcts with CLI
-	os.Remove(tempDir + string(os.PathSeparator) + "incomplete.episode.flv")
+	os.Remove(tempDir + string(os.PathSeparator) + "incomplete.episode.mkv")
 
-	// Executes the command which we will use to dump the episode
-	cmd := exec.Command(anirip.FindAbsoluteBinary("rtmpdump"),
-		"-r", episode.MediaInfo.URLOne,
-		"-a", episode.MediaInfo.URLTwo,
-		"-f", "WIN 19,0,0,245",
-		"-W", "http://static.ak.crunchyroll.com/versioned_assets/ChromelessPlayerApp.6282d5bd.swf",
-		"-m", "10",
-		"-p", episode.URL,
-		"-y", episode.MediaInfo.File,
-		"-o", "incomplete.episode.flv")
+	// Executes the command which will be used to dump the episode
+	cmd := exec.Command(anirip.FindAbsoluteBinary("ffmpeg"),
+		"-i", e.StreamURL,
+		"-c", "copy",
+		"incomplete.episode.mkv")
 	cmd.Dir = tempDir
 	if err := cmd.Run(); err != nil {
 		return anirip.Error{Message: "There was an error while starting the rtmpdump command...", Err: err}

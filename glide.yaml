@@ -1,0 +1,5 @@
+package: github.com/sdwolfe32/anirip
+import:
+- package: github.com/PuerkitoBio/goquery
+- package: github.com/fatih/color
+- package: gopkg.in/urfave/cli.v1

@@ -101,7 +101,7 @@ type Event struct {
 
 // Entirely downloads subtitles to our temp directory
 // IGNORING offset for now (no reason to trim cr subs)
-func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
+func (episode *Episode) DownloadSubtitles(language string, offset int, tempDir string, cookies []*http.Cookie) (string, error) {
 	// Remove stale temp file to avoid conflcts in func
 	os.Remove(tempDir + string(os.PathSeparator) + "subtitles.episode.ass")
 
@@ -131,7 +131,7 @@ func (episode *CrunchyrollEpisode) DownloadSubtitles(language string, offset int
 	return subtitleLang, nil
 }
 
-func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) (string, error) {
+func (episode *Episode) getSubtitleInfo(subtitles *Subtitle, language string, cookies []*http.Cookie) (string, error) {
 	// Formdata to indicate the source page
 	formData := url.Values{
 		"current_page": {episode.URL},
@@ -201,7 +201,7 @@ func (episode *CrunchyrollEpisode) getSubtitleInfo(subtitles *Subtitle, language
 }
 
 // Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
-func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies []*http.Cookie) error {
+func (episode *Episode) getSubtitleData(subtitles *Subtitle, cookies []*http.Cookie) error {
 	// Formdata to indicate the source page
 	formData := url.Values{
 		"current_page": {episode.URL},
@@ -244,7 +244,7 @@ func (episode *CrunchyrollEpisode) getSubtitleData(subtitles *Subtitle, cookies 
 }
 
 // Dumps the crunchyroll subtitles to file to be muxed into MKV
-func (episode *CrunchyrollEpisode) dumpSubtitleASS(offset int, subtitles *Subtitle, tempDir string) error {
+func (episode *Episode) dumpSubtitleASS(offset int, subtitles *Subtitle, tempDir string) error {
 	// Attempts to decrypt the compressed subtitles we recieved
 	decryptedSubtitles, err := decryptSubtitles(subtitles)
 	if err != nil || decryptedSubtitles == "" {

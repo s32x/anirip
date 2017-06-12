@@ -15,18 +15,17 @@ import (
 
 // Session contains user login credentials OR active session cookies
 type Session struct {
-	User    string
-	Pass    string
-	Cookies []*http.Cookie
+	User, Pass string
+	Cookies    []*http.Cookie
 }
 
 // Login logs the user in and stores the cookies in a file in our temp folder
 // for use on future requests
-func (s *Session) Login(user, pass, tempDir string) error {
+func (s *Session) Login(client *anirip.HTTPClient, user, pass, tempDir string) error {
 	// First checks to see if we already have a cookie config
 	exists, err := getStoredCookies(s, tempDir)
 	if err != nil {
-		return err
+		return anirip.NewError("Failed to retrieve stored cookies", err)
 	}
 
 	// If we don't already have cookies, get new ones
@@ -34,16 +33,15 @@ func (s *Session) Login(user, pass, tempDir string) error {
 		// Sets the credentials and attempts to generate new cookies
 		s.User = user
 		s.Pass = pass
-		err := createNewCookies(s)
-		if err != nil {
-			return err
+		if err := createNewCookies(client, s); err != nil {
+			return anirip.NewError("Failed to create new cookies", err)
 		}
 	}
 
 	// Test the cookies we currently have at this point
-	valid, err := validateCookies(s)
+	valid, err := validateCookies(client, s)
 	if err != nil || !valid {
-		return anirip.Error{Message: "Our Crunchyroll cookies are invalid", Err: err}
+		return anirip.NewError("Your Crunchyroll cookies are invalid", err)
 	}
 
 	// If the cookies we have are currently valid but dont exist, store them
@@ -52,15 +50,13 @@ func (s *Session) Login(user, pass, tempDir string) error {
 		var sessionBytes bytes.Buffer
 		sessionEncoder := gob.NewEncoder(&sessionBytes)
 		s.Pass = "" // Clears the password before writing it to our cookie file
-		err = sessionEncoder.Encode(s)
-		if err != nil {
-			return anirip.Error{Message: "There was an error encoding your cookies", Err: err}
+		if err := sessionEncoder.Encode(s); err != nil {
+			return anirip.NewError("There was an error encoding your cookies", err)
 		}
 
 		// Writes cookies to cookies file
-		err := ioutil.WriteFile(tempDir+string(os.PathSeparator)+"crunchyroll.cookie", sessionBytes.Bytes(), 0644)
-		if err != nil {
-			return anirip.Error{Message: "There was an error writing cookies to file", Err: err}
+		if err := ioutil.WriteFile(tempDir+string(os.PathSeparator)+"crunchyroll.cookie", sessionBytes.Bytes(), 0644); err != nil {
+			return anirip.NewError("There was an error writing cookies to file", err)
 		}
 		return nil
 	}
@@ -79,8 +75,8 @@ func getStoredCookies(session *Session, tempDir string) (bool, error) {
 		sessionBytes, err := ioutil.ReadFile(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
-			_ = os.Remove(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
-			return false, anirip.Error{Message: "There was an error reading your cookies file", Err: err}
+			os.Remove(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
+			return false, anirip.NewError("There was an error reading your cookies file", err)
 		}
 
 		// Creates a decoder to decode the bytes found in our cookiesFile
@@ -92,7 +88,7 @@ func getStoredCookies(session *Session, tempDir string) (bool, error) {
 		if err != nil {
 			// Attempts a deletion of an unreadable cookies file
 			_ = os.Remove(tempDir + string(os.PathSeparator) + "crunchyroll.cookie")
-			return false, anirip.Error{Message: "There was an error decoding your cookies file", Err: err}
+			return false, anirip.NewError("There was an error decoding your cookies file", err)
 		}
 		// Cookies are able to be decoded so return true
 		return true, nil
@@ -101,43 +97,39 @@ func getStoredCookies(session *Session, tempDir string) (bool, error) {
 }
 
 // createNewCookies sends a login request to crunchyroll and stores the cookies recieved
-func createNewCookies(s *Session) error {
-	form := url.Values{
+func createNewCookies(client *anirip.HTTPClient, s *Session) error {
+	body := bytes.NewBufferString(url.Values{
 		"formname": {"RpcApiUser_Login"},
 		"fail_url": {"http://www.crunchyroll.com/login"},
 		"name":     {s.User},
 		"password": {s.Pass},
-	}
+	}.Encode())
 
-	head := http.Header{}
-	head.Add("referer", "https://www.crunchyroll.com/login")
-	head.Add("content-type", "application/x-www-form-urlencoded")
-	resp, err := anirip.GetHTTPResponse("POST", "https://www.crunchyroll.com/?a=formhandler",
-		bytes.NewBufferString(form.Encode()), head, []*http.Cookie{})
+	client.Header.Add("referer", "https://www.crunchyroll.com/login")
+	client.Header.Add("connection-type", "application/x-www-form-urlencoded")
+	resp, err := client.Post("https://www.crunchyroll.com/?a=formhandler", body)
 	if err != nil {
 		return err
 	}
-
 	s.Cookies = resp.Cookies()
 	return nil
 }
 
 // validateCookies performs a get request on crunchyrolls homepage and checks
 // to be sure a non-empty username is found
-func validateCookies(s *Session) (bool, error) {
-	head := http.Header{}
-	head.Add("Connection", "keep-alive")
-	resp, err := anirip.GetHTTPResponse("GET", "http://www.crunchyroll.com/", nil, head, s.Cookies)
+func validateCookies(client *anirip.HTTPClient, s *Session) (bool, error) {
+	client.Header.Add("connection", "keep-alive")
+	resp, err := client.Get("http://www.crunchyroll.com/")
 	if err != nil {
-		return false, err
+		return false, anirip.NewError("Failed to validate cookies", err)
 	}
 
 	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
-		return false, anirip.Error{Message: "There was an error parsing cookie validation page", Err: err}
+		return false, anirip.NewError("There was an error parsing cookie validation page", err)
 	}
-	user := strings.TrimSpace(doc.Find("li.username").First().Text())
 
+	user := strings.TrimSpace(doc.Find("li.username").First().Text())
 	if resp.StatusCode == 200 && user != "" {
 		return true, nil
 	}

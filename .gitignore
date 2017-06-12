@@ -1,9 +1,1 @@
-engine/php/pharcommand.phar
-engine/php/phar.phar.bat
-*.php
-*.exe
-*.cnf
-*.syso
-*.dll
-*.lib
-*.cookie
+/vendor/*

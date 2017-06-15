@@ -4,47 +4,24 @@ A Crunchyroll & Daisuki episode/subtitle ripper written in GO
 ![alt text](/images/anirip130.jpg "anirip v1.3.0 Screenshot")
 
 ## Usage
-To login to providers (Note: You only need to login once):
+To download shows from Crunchyroll :
 ```
-anirip login --user dankUsername69 --pass str8c4s497 crunchyroll
-anirip login -u dai5uk1ISLyf -p Yes2325235 daisuki
-```
-To download videos from Daisuki and CrunchyRoll (Note: You only need to login once):
-```
-anirip http://www.crunchyroll.com/strike-the-blood
-anirip --trim daisuki http://www.daisuki.net/us/en/anime/detail.ONEPUNCHMAN.html
-```
-To download multiple shows just add more urls:
-```
-anirip http://www.crunchyroll.com/strike-the-blood http://www.crunchyroll.com/god-eater http://www.crunchyroll.com/attack-on-titan
-```
-To clear all temporary anirip files on the system:
-```
-anirip clear
-```
-To get a list of CLI commands:
-```
-anirip help
+anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 ```
 ### Setup Guide
-**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) and [`mkvtoolnix`](https://mkvtoolnix.download/downloads.html) if they are not already installed on your system. We will used these tools primarily for trimming and editing video metadata. You will also need [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip). We use this in order to clean up metadata after the file has been dumped.
+**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it isn't already installed on your system. We will using this toos primarily for editing video metadata. You will also need [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip). We use this in order to clean up metadata after the file has been dumped.
 
-**2) (for Daisuki support)** Install and correctly configure [`PHP`](http://windows.php.net/download/) (5.6.xx). Specifically, make sure to follow [this guide](https://github.com/K-S-V/Scripts/wiki#installing-php-for-dummies-windows-only) and use the ```php.ini``` file provided in the guide.
+**2)** Clone the `anirip` repository or [download the latest release](https://github.com/sdwolfe32/anirip/releases).
 
-**3) (for Crunchyroll support)** Install [`rtmpdump`](https://github.com/K-S-V/Scripts/releases). To use anirip on Crunchyroll you will need a patched rtmpdump that supports Handshake 10.
-
-**4)** Clone the `anirip` repository or [download the latest release](https://github.com/sdwolfe32/anirip/releases).
-
-**5)** `cd` into the `anirip` repository directory and execute the following commands:
+**3)** `cd` into the `anirip` repository directory and execute the following commands:
 ```
 $ go get
-$ go generate
 $ go build -o anirip.exe
 ```
 
-**6)** Feel free to move `anirip` wherever you'd like, as it is a CLI you should be able to call it as such as long as it's in a relative directory/in your path.
+**4)** Feel free to move `anirip` wherever you'd like, as it is a CLI you should be able to call it as such as long as it's in a relative directory/in your path.
 
-**7)** Try a few of the usage commands listed above...
+**5)** Try a few of the usage commands listed above...
 
 Note : When I say "Install", I mean you need to set these executables up in your PATH OR relatively next to anirip.exe so that anirip can access them directly from the command line.
 
@@ -57,7 +34,7 @@ This application is not endorsed or affiliated with any anime stream provider. T
 The MIT License (MIT)
 =====================
 
-Copyright © 2016 Steven Wolfe
+Copyright © 2017 Steven Wolfe
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

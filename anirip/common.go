@@ -1,68 +1,57 @@
 package anirip
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
-// Rename func that retries 10 times before returning an error
-func Rename(sourcesFile, destinationFile string, i int) error {
-	// Attempts a rename and if it fails, it will retry i times
-	if err := os.Rename(sourcesFile, destinationFile); err != nil {
+var illegalChars = []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+
+// Rename renames the source to the desired destination file name and
+// recursively retries i times if there are any issues
+func Rename(src, dst string, i int) error {
+	if err := os.Rename(src, dst); err != nil {
 		if i > 0 {
-			Rename(sourcesFile, destinationFile, i-1)
+			return Rename(src, dst, i-1)
 		}
-		return Error{Message: "There was an error renaming " + sourcesFile + " to " + destinationFile, Err: err}
+		return err
 	}
 	return nil
 }
 
-// Constructs an episode file name and returns the file name cleaned
-func GenerateEpisodeFileName(showTitle string, seasonNumber int, episodeNumber float64, description string) string {
-	// Pads season number with a 0 if it's less than 10
-	seasonNumberString := strconv.Itoa(seasonNumber)
-	if seasonNumber < 10 {
-		seasonNumberString = "0" + strconv.Itoa(seasonNumber)
+// GenerateEpisodeFilename constructs an episode filename and returns the
+// filename fully sanitized
+func GenerateEpisodeFilename(show string, season int, episode float64, desc string) string {
+	var ep string
+	ep = fmt.Sprintf("%g", episode)
+	if episode < 10 {
+		ep = "0" + ep // Prefix a zero to episode
 	}
-
-	// Pads episode number with a 0 if it's less than 10
-	episodeNumberString := strconv.FormatFloat(episodeNumber, 'f', -1, 64)
-	if episodeNumber < 10 {
-		episodeNumberString = "0" + strconv.FormatFloat(episodeNumber, 'f', -1, 64)
-	}
-
-	// Constructs episode file name and returns it
-	fileName := showTitle + " - S" + seasonNumberString + "E" + episodeNumberString + " - " + description
-	return CleanFileName(fileName)
+	return CleanFilename(fmt.Sprintf("%s - S%sE%s - %s", show, fmt.Sprintf("%02d", season), ep, desc))
 }
 
-// Cleans the new file/folder name so there won't be any write issues
-func CleanFileName(fileName string) string {
-	newFileName := fileName // Strips out any illegal characters and returns our new file name
-	for _, illegalChar := range []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"} {
-		newFileName = strings.Replace(newFileName, illegalChar, "", -1)
+// CleanFilename cleans the filename of any illegal file characters to prevent
+// write errors
+func CleanFilename(name string) string {
+	for _, bad := range illegalChars {
+		name = strings.Replace(name, bad, "", -1)
 	}
-	newFileName = strings.Replace(newFileName, "  ", " ", -1) // Replaces double spaces with a single space
-	return newFileName
+	return strings.Replace(name, "  ", " ", -1)
 }
 
-// Attempts to search, find, and return the absolute path of a given binary
-func FindAbsoluteBinary(binaryName string) string {
-	// Searches for the binary whether it be in the path or relative
-	lookPath, err := exec.LookPath(binaryName)
+// FindAbsoluteBinary attempts to search, find, and return the absolute path of
+// the desired binary
+func FindAbsoluteBinary(name string) string {
+	path, err := exec.LookPath(name)
 	if err != nil {
-		lookPath = binaryName
+		path = name
 	}
-
-	// Makes our path absolute regardless of where it is
-	absPath, err := filepath.Abs(lookPath)
+	path, err = filepath.Abs(path)
 	if err != nil {
-		absPath = binaryName
+		path = name
 	}
-
-	// Returns the absolute path to the binary we're looking to utilize
-	return absPath
+	return path
 }

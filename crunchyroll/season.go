@@ -10,16 +10,17 @@ type Season struct {
 	Episodes []Episode
 }
 
-// Re-stores episodes belonging to the season and returns them for iteration
+// GetNumber returns the season number that will be used for folder naming
+func (s *Season) GetNumber() int {
+	return s.Number
+}
+
+// GetEpisodes copies the episodes on the Season and returns them as an
+// anirip.Episodes
 func (s *Season) GetEpisodes() anirip.Episodes {
 	episodes := []anirip.Episode{}
 	for i := 0; i < len(s.Episodes); i++ {
 		episodes = append(episodes, &s.Episodes[i])
 	}
 	return episodes
-}
-
-// Return the season number that will be used for folder naming
-func (s *Season) GetNumber() int {
-	return s.Number
 }

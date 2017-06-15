@@ -1,7 +1,6 @@
 package crunchyroll
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -19,23 +18,22 @@ type Show struct {
 }
 
 // Scrape appends all the seasons/episodes found for the show
-func (s *Show) Scrape(showURL string, cookies []*http.Cookie) error {
-	// Gets the HTML of the show page
-	showResponse, err := anirip.GetHTTPResponse("GET", showURL, nil, nil, cookies)
+func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
+	res, err := client.Get(showURL, nil)
 	if err != nil {
-		return err
+		return anirip.NewError("There was an error retrieving show page", err)
 	}
 
-	// Creates a goquery document for scraping
-	showDoc, err := goquery.NewDocumentFromResponse(showResponse)
+	// Creates the goquery document for scraping
+	showDoc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
-		return anirip.Error{Message: "There was an error while accessing the show page", Err: err}
+		return anirip.NewError("There was an error while accessing the show page", err)
 	}
 
-	// Sets Title, and Path and URL on our show object
+	// Sets Title, Path and URL on our show object
 	s.Title = showDoc.Find("#container > h1 > span").First().Text()
 	s.URL = showURL
-	s.Path = strings.Replace(s.URL, "http://www.crunchyroll.com", "", 1) // Removes the host so we have just the path
+	s.Path = strings.Replace(s.URL, "http://www.crunchyroll.com", "", 1)
 
 	// Searches first for the search div
 	showDoc.Find("ul.list-of-seasons.cf").Each(func(i int, seasonList *goquery.Selection) {
@@ -55,7 +53,7 @@ func (s *Show) Scrape(showURL string, cookies []*http.Cookie) error {
 				episodeNumber, _ := strconv.ParseFloat(strings.Replace(episodeTitle, "Episode ", "", 1), 64)
 				episodePath, _ := episode.Find("a").First().Attr("href")
 				episodeID, _ := strconv.Atoi(episodePath[len(episodePath)-6:])
-				s.Seasons[i2].Episodes = append(show.Seasons[i2].Episodes, Episode{
+				s.Seasons[i2].Episodes = append(s.Seasons[i2].Episodes, Episode{
 					ID:     episodeID,
 					Title:  episodeTitle,
 					Number: episodeNumber,
@@ -89,7 +87,7 @@ func (s *Show) Scrape(showURL string, cookies []*http.Cookie) error {
 	for k1, season := range s.Seasons {
 		s.Seasons[k1].Number = k1 + 1
 		for k2, episode := range season.Episodes {
-			s.Seasons[k2].Episodes[k1].FileName = anirip.GenerateEpisodeFileName(s.Title, s.Seasons[k2].Number, episode.Number, "")
+			s.Seasons[k1].Episodes[k2].Filename = anirip.GenerateEpisodeFilename(s.Title, s.Seasons[k1].Number, episode.Number, "")
 		}
 	}
 

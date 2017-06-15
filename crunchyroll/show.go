@@ -19,7 +19,7 @@ type Show struct {
 
 // Scrape appends all the seasons/episodes found for the show
 func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
-	res, err := client.Get(showURL)
+	res, err := client.Get(showURL, nil)
 	if err != nil {
 		return anirip.NewError("There was an error retrieving show page", err)
 	}
@@ -87,7 +87,7 @@ func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
 	for k1, season := range s.Seasons {
 		s.Seasons[k1].Number = k1 + 1
 		for k2, episode := range season.Episodes {
-			s.Seasons[k2].Episodes[k1].Filename = anirip.GenerateEpisodeFilename(s.Title, s.Seasons[k2].Number, episode.Number, "")
+			s.Seasons[k1].Episodes[k2].Filename = anirip.GenerateEpisodeFilename(s.Title, s.Seasons[k1].Number, episode.Number, "")
 		}
 	}
 

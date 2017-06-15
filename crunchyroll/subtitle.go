@@ -98,15 +98,14 @@ type Event struct {
 	Text        string         `xml:"text,attr"`
 }
 
-// Entirely downloads subtitles to our temp directory
-// IGNORING offset for now (no reason to trim cr subs)
+// DownloadSubtitles entirely downloads subtitles to our temp directory
 func (episode *Episode) DownloadSubtitles(client *anirip.HTTPClient, language string, tempDir string) (string, error) {
 	// Remove stale temp file to avoid conflicts in func
 	os.Remove(tempDir + string(os.PathSeparator) + "subtitles.episode.ass")
 
 	// Populates the subtitle info for the episode
 	subtitles := new(Subtitle)
-	subtitleLang, err := episode.getSubtitleInfo(client, subtitles, language)
+	subLang, err := episode.getSubtitleInfo(client, subtitles, language)
 	if err != nil {
 		return "", anirip.NewError("Failed to retrieve subtitle manifest", err)
 	}
@@ -127,7 +126,7 @@ func (episode *Episode) DownloadSubtitles(client *anirip.HTTPClient, language st
 	}
 
 	// Defaulting to english for now...
-	return subtitleLang, nil
+	return subLang, nil
 }
 
 func (episode *Episode) getSubtitleInfo(client *anirip.HTTPClient, subtitles *Subtitle, language string) (string, error) {
@@ -145,12 +144,7 @@ func (episode *Episode) getSubtitleInfo(client *anirip.HTTPClient, subtitles *Su
 	}.Encode())
 
 	// Performs the HTTP Request that will get the XML
-	client.Header.Add("host", "www.crunchyroll.com")
-	client.Header.Add("origin", "http://static.ak.crunchyroll.com")
-	client.Header.Add("content-type", "application/x-www-form-urlencoded")
-	client.Header.Add("referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
-	client.Header.Add("x-requested-with", "ShockwaveFlash/19.0.0.245")
-	resp, err := client.Post("http://www.crunchyroll.com/xml/?"+queryString, reqBody)
+	resp, err := client.Post("http://www.crunchyroll.com/xml/?"+queryString, nil, reqBody)
 	if err != nil {
 		return "", err
 	}
@@ -196,12 +190,12 @@ func (episode *Episode) getSubtitleData(client *anirip.HTTPClient, subtitles *Su
 	}.Encode())
 
 	// Performs the HTTP Request that will get the XML
-	client.Header.Add("host", "www.crunchyroll.com")
-	client.Header.Add("origin", "http://static.ak.crunchyroll.com")
-	client.Header.Add("content-type", "application/x-www-form-urlencoded")
-	client.Header.Add("referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
-	client.Header.Add("x-requested-with", "ShockwaveFlash/19.0.0.245")
-	resp, err := client.Post("http://www.crunchyroll.com/xml/?"+queryString, body)
+	// client.Header.Add("host", "www.crunchyroll.com")
+	// client.Header.Add("origin", "http://static.ak.crunchyroll.com")
+	// client.Header.Add("content-type", "application/x-www-form-urlencoded")
+	// client.Header.Add("referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.fb2c7182.swf")
+	// client.Header.Add("x-requested-with", "ShockwaveFlash/19.0.0.245")
+	resp, err := client.Post("http://www.crunchyroll.com/xml/?"+queryString, nil, body)
 	if err != nil {
 		return err
 	}

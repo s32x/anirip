@@ -3,6 +3,7 @@ package crunchyroll
 import (
 	"bytes"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -45,12 +46,12 @@ type Episode struct {
 }
 
 // GetEpisodeInfo retrieves and populates the metadata on the Episode
-func (e *Episode) GetEpisodeInfo(client anirip.HTTPClient, quality string) error {
+func (e *Episode) GetEpisodeInfo(client *anirip.HTTPClient, quality string) error {
 	e.Quality = quality // Sets the quality to the passed quality string
 
 	// Gets the HTML of the episode page
-	client.Header.Add("referer", "http://www.crunchyroll.com/"+strings.Split(e.Path, "/")[1])
-	resp, err := client.Get(e.URL)
+	// client.Header.Add("Referer", "http://www.crunchyroll.com/"+strings.Split(e.Path, "/")[1])
+	resp, err := client.Get(e.URL, nil)
 	if err != nil {
 		return anirip.NewError("There was an error requesting the episode doc", err)
 	}
@@ -78,14 +79,13 @@ func (e *Episode) GetEpisodeInfo(client anirip.HTTPClient, quality string) error
 	reqBody := bytes.NewBufferString(url.Values{"current_page": {e.URL}}.Encode())
 
 	// Request header
-	client.Header.Add("host", "www.crunchyroll.com")
-	client.Header.Add("origin", "http://static.ak.crunchyroll.com")
-	client.Header.Add("content-type", "application/x-www-form-urlencoded")
-	client.Header.Set("referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.f3770232.swf")
-	client.Header.Add("x-requested-with", "ShockwaveFlash/22.0.0.192")
-
-	// Execute the POST request
-	resp, err = client.Post("http://www.crunchyroll.com/xml/?"+queryString, reqBody)
+	header := http.Header{}
+	header.Add("Host", "www.crunchyroll.com")
+	header.Add("Origin", "http://static.ak.crunchyroll.com")
+	header.Add("Content-Type", "application/x-www-form-urlencoded")
+	header.Set("Referer", "http://static.ak.crunchyroll.com/versioned_assets/StandardVideoPlayer.f3770232.swf")
+	header.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
+	resp, err = client.Post("http://www.crunchyroll.com/xml/?"+queryString, header, reqBody)
 	if err != nil {
 		return anirip.NewError("There was an error retrieving the manifest", err)
 	}
@@ -97,7 +97,7 @@ func (e *Episode) GetEpisodeInfo(client anirip.HTTPClient, quality string) error
 	}
 
 	// Checks for an unsupported region first
-	// TODO clean this up with Index()/LastIndex()
+	// TODO Use REGEX to extract xml
 	xmlString := string(body)
 	if strings.Contains(xmlString, "<code>") && strings.Contains(xmlString, "</code>") {
 		if strings.SplitN(strings.SplitN(xmlString, "<code>", 2)[1], "</code>", 2)[0] == "4" {
@@ -106,7 +106,7 @@ func (e *Episode) GetEpisodeInfo(client anirip.HTTPClient, quality string) error
 	}
 
 	// Same type of xml parsing to get the file
-	// TODO clean this up with Index()/LastIndex()
+	// TODO Use REGEX to extract efile
 	eFile := ""
 	if strings.Contains(xmlString, "<file>") && strings.Contains(xmlString, "</file>") {
 		eFile = strings.SplitN(strings.SplitN(xmlString, "<file>", 2)[1], "</file>", 2)[0]
@@ -120,9 +120,9 @@ func (e *Episode) GetEpisodeInfo(client anirip.HTTPClient, quality string) error
 	return nil
 }
 
-// DownloadEpisode downloads entire episode to our temp directory
-func (e *Episode) DownloadEpisode(proc anirip.VideoProcessor, quality string) error {
-	return proc.DumpHLS(e.StreamURL)
+// Download downloads entire episode to our temp directory
+func (e *Episode) Download(vp anirip.VideoProcessor) error {
+	return vp.DumpHLS(e.StreamURL)
 }
 
 // GetFilename returns the Episodes filename

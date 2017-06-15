@@ -1,16 +1,8 @@
 package anirip
 
-// TODO Consolidate interfaces into Downloader
-
-// Session implements Session functionality
-type Session interface {
-	Login(HTTPClient, string, string, string) error
-	GetCookies() HTTPClient
-}
-
 // Show implements Show functionality
 type Show interface {
-	Scrape(HTTPClient, string) error
+	Scrape(client *HTTPClient, showURL string) error
 	GetTitle() string
 	GetSeasons() Seasons
 }
@@ -29,8 +21,8 @@ type Episodes []Episode
 
 // Episode implements Episode functionality
 type Episode interface {
-	GetEpisodeInfo(client HTTPClient, quality string) error
-	DownloadEpisode(vp VideoProcessor, quality string) error
-	// DownloadSubtitles(client HTTPClient, string, int, string) (string, error)
+	GetEpisodeInfo(client *HTTPClient, quality string) error
+	Download(vp VideoProcessor) error
+	DownloadSubtitles(client *HTTPClient, language string, tempDir string) (string, error)
 	GetFilename() string
 }

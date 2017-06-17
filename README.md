@@ -8,28 +8,37 @@ To download shows from Crunchyroll :
 ```
 anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 ```
-### Setup Guide
-**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it isn't already installed on your system. We will using this toos primarily for editing video metadata. You will also need [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip). We use this in order to clean up metadata after the file has been dumped.
+## Setup Guide (EASY)
 
-**2)** Clone the `anirip` repository or [download the latest release](https://github.com/sdwolfe32/anirip/releases).
+**1)** Download the [latest release](https://github.com/sdwolfe32/anirip/releases).
 
-**3)** `cd` into the `anirip` repository directory and execute the following commands:
+**2)** Extract and cd into the release directory.
+
+**5)** Follow the usage instructions above.
+
+## Setup Guide (HARD)
+
+**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it isn't already installed on your system. We will using this tool primarily for dumping episode content and editing video metadata.
+
+**2)** Install [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip) if it isnt' already installed on your system. We use this in order to clean up metadata after each episode has been dumped.
+
+**3)** Clone the `anirip` repository.
+
+**4)** `cd` into the `anirip` repository directory and execute the following commands:
 ```
 $ go get
-$ go build -o anirip.exe
+$ go install
 ```
 
-**4)** Feel free to move `anirip` wherever you'd like, as it is a CLI you should be able to call it as such as long as it's in a relative directory/in your path.
+**5)** Follow the usage instructions above.
 
-**5)** Try a few of the usage commands listed above...
-
-Note : When I say "Install", I mean you need to set these executables up in your PATH OR relatively next to anirip.exe so that anirip can access them directly from the command line.
+Note : When I say "Install", I mean you need to set these executables up in your PATH OR relatively next to your anirip binary so that anirip can access them directly from the command line.
 
 ## Disclaimer
-This repo/project was written as an educational intro to web-scraping and network analysis. It is provided publicly as a an open source project for nothing other than educational purposes. I do not take responsibility for how you use this software nor do I recommend you use it in any way that may infringe on Crunchyroll or Daisuki as a business.
+This repo/project was written as an educational intro to web-scraping and network analysis. It is provided publicly as a an open source project for nothing other than educational purposes. I do not take responsibility for how you use this software nor do I recommend you use it in any way that may infringe on Crunchyroll as a business.
 
 ## Legal Warning
-This application is not endorsed or affiliated with any anime stream provider. The usage of this application enables episodes to be downloaded for offline convenience which may be forbidden by law in your country. Usage of this application may also cause a violation of the agreed Terms of Service between you and the stream provider. A tool is not responsible for your actions; please make an informed decision prior to using this application. Any Stream decryption is done by a third party program, in the case of Crunchyroll by RTMPDump, in the case of Daisuki by the akamai decryption flash library. Usage of this third party programs and/or libraries may be forbidden in your country without proper consent of the copyright holder. None of these programs/libraries are included in this release.
+This application is not endorsed or affiliated with any anime stream provider. The usage of this application enables episodes to be downloaded for offline convenience which may be forbidden by law in your country. Usage of this application may also cause a violation of the agreed Terms of Service between you and the stream provider. A tool is not responsible for your actions; please make an informed decision prior to using this application. Any Stream decryption is done by a third party program, in the case of Crunchyroll by ffmpeg. Usage of third party programs and/or libraries may be forbidden in your country without proper consent of the copyright holder.
 
 The MIT License (MIT)
 =====================

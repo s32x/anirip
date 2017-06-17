@@ -61,7 +61,7 @@ func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
 	// Scrapes all show metadata for the show requested
 	var show anirip.Show
 	show = new(crunchyroll.Show)
-	l.Info("Scraping show metadata for %s", user)
+	l.Info("Scraping show metadata for %s", show.GetTitle())
 	if err = show.Scrape(client, showURL); err != nil {
 		l.Error(err)
 		return

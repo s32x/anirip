@@ -97,7 +97,8 @@ func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
 
 // Gets the title of the show for referencing outside of this lib
 func (show *Show) GetTitle() string {
-	return show.Title
+	//CleanFileName to remove illegal chars from show name, if any.
+	return anirip.CleanFilename(show.Title)
 }
 
 // Re-stores seasons belonging to the show and returns them for iteration

@@ -1,10 +1,10 @@
 hash: 68c889da99b30c2f3e51b2a6d4a280d4555adab45220147233fc93e4771e5b4b
-updated: 2018-06-24T22:29:46.31432-07:00
+updated: 2018-06-24T23:38:03.781426-07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 901648c87902174f774fac311d7f176f8647bdaa
 - name: github.com/entrik/httpclient
-  version: ab56aa95da87432c47007acaecbbd2f3ef9703e9
+  version: 09560c8cba21184135239a24606b3dc15bbd36b4
 - name: github.com/fatih/color
   version: 2d684516a8861da43017284349b7e303e809ac21
 - name: github.com/mattn/go-colorable

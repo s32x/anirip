@@ -1,4 +1,4 @@
-package anirip
+package common
 
 import "github.com/fatih/color"
 

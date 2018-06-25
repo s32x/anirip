@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/sdwolfe32/anirip/anirip"
+	"github.com/sdwolfe32/anirip/common"
 	"github.com/sdwolfe32/anirip/crunchyroll"
 )
 
@@ -25,7 +25,7 @@ var (
 )
 
 func main() {
-	l := anirip.NewLogger() // Generate a new logger
+	l := common.NewLogger() // Generate a new logger
 	l.Cyan("v1.5.0(6/14/2017) - by Steven Wolfe <steven@swolfe.me>")
 	args := os.Args
 
@@ -37,7 +37,7 @@ func main() {
 	download(l, args[3], args[1], args[2], "1080", "eng")
 }
 
-func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
+func download(l *common.Logger, showURL, user, pass, quality, subLang string) {
 	// Verifies the existance of an anirip folder in our temp directory
 	_, err := os.Stat(tempDir)
 	if err != nil {
@@ -46,7 +46,7 @@ func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
 	}
 
 	// Generate the HTTP client that will be used through whole lifecycle
-	client, err := anirip.NewHTTPClient()
+	client, err := common.NewHTTPClient()
 	if err != nil {
 		l.Error(err)
 		return
@@ -60,7 +60,7 @@ func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
 	}
 
 	// Scrapes all show metadata for the show requested
-	var show anirip.Show
+	var show common.Show
 	show = new(crunchyroll.Show)
 	l.Info("Scraping show metadata for %s", show.GetTitle())
 	if err = show.Scrape(client, showURL); err != nil {
@@ -69,7 +69,7 @@ func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
 	}
 
 	// Creates a new video processor that wil perform all video processing operations
-	vp := anirip.NewVideoProcessor(tempDir)
+	vp := common.NewVideoProcessor(tempDir)
 
 	// Creates a new show directory which will store all seasons
 	os.Mkdir(show.GetTitle(), 0777)
@@ -126,7 +126,7 @@ func download(l *anirip.Logger, showURL, user, pass, quality, subLang string) {
 			}
 
 			// Moves the episode to the appropriate season sub-directory
-			if err := anirip.Rename(tempDir+string(os.PathSeparator)+"episode.mkv",
+			if err := common.Rename(tempDir+string(os.PathSeparator)+"episode.mkv",
 				show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()]+
 					string(os.PathSeparator)+episode.GetFilename()+".mkv", 10); err != nil {
 				l.Error(err)

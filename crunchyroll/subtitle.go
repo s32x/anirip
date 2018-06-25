@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sdwolfe32/anirip/anirip"
+	"github.com/sdwolfe32/anirip/common"
 )
 
 type SubListResults struct {
@@ -99,7 +99,7 @@ type Event struct {
 }
 
 // DownloadSubtitles entirely downloads subtitles to our temp directory
-func (episode *Episode) DownloadSubtitles(client *anirip.HTTPClient, language string, tempDir string) (string, error) {
+func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language string, tempDir string) (string, error) {
 	// Remove stale temp file to avoid conflicts in func
 	os.Remove(tempDir + string(os.PathSeparator) + "subtitles.episode.ass")
 
@@ -107,7 +107,7 @@ func (episode *Episode) DownloadSubtitles(client *anirip.HTTPClient, language st
 	subtitles := new(Subtitle)
 	subLang, err := episode.getSubtitleInfo(client, subtitles, language)
 	if err != nil {
-		return "", anirip.NewError("Failed to retrieve subtitle manifest", err)
+		return "", common.NewError("Failed to retrieve subtitle manifest", err)
 	}
 
 	// If we get back a subtitle that was nil (no ID), there are no subs available
@@ -129,7 +129,7 @@ func (episode *Episode) DownloadSubtitles(client *anirip.HTTPClient, language st
 	return subLang, nil
 }
 
-func (episode *Episode) getSubtitleInfo(client *anirip.HTTPClient, subtitles *Subtitle, language string) (string, error) {
+func (episode *Episode) getSubtitleInfo(client *common.HTTPClient, subtitles *Subtitle, language string) (string, error) {
 	// Querystring to ask for the subtitles info
 	queryString := url.Values{
 		"req":                  {"RpcApiSubtitle_GetListing"},
@@ -177,7 +177,7 @@ func (episode *Episode) getSubtitleInfo(client *anirip.HTTPClient, subtitles *Su
 }
 
 // Assigns the subtitle to the passed episode and attempts to get the xml subs for this episode
-func (episode *Episode) getSubtitleData(client *anirip.HTTPClient, subtitles *Subtitle) error {
+func (episode *Episode) getSubtitleData(client *common.HTTPClient, subtitles *Subtitle) error {
 	// Querystring to ask for the subtitles data
 	queryString := url.Values{
 		"req":                {"RpcApiSubtitle_GetXml"},

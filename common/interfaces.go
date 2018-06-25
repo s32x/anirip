@@ -1,4 +1,4 @@
-package anirip
+package common
 
 // Show implements Show functionality
 type Show interface {
@@ -22,7 +22,7 @@ type Episodes []Episode
 // Episode implements Episode functionality
 type Episode interface {
 	GetEpisodeInfo(client *HTTPClient, quality string) error
-	Download(vp VideoProcessor) error
+	Download(vp *VideoProcessor) error
 	DownloadSubtitles(client *HTTPClient, language, tempDir string) (string, error)
 	GetFilename() string
 }

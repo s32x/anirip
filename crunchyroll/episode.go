@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sdwolfe32/anirip/anirip"
+	"github.com/sdwolfe32/anirip/common"
 )
 
 var (
@@ -46,20 +46,20 @@ type Episode struct {
 }
 
 // GetEpisodeInfo retrieves and populates the metadata on the Episode
-func (e *Episode) GetEpisodeInfo(client *anirip.HTTPClient, quality string) error {
+func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) error {
 	e.Quality = quality // Sets the quality to the passed quality string
 
 	// Gets the HTML of the episode page
 	// client.Header.Add("Referer", "http://www.crunchyroll.com/"+strings.Split(e.Path, "/")[1])
 	resp, err := client.Get(e.URL, nil)
 	if err != nil {
-		return anirip.NewError("There was an error requesting the episode doc", err)
+		return common.NewError("There was an error requesting the episode doc", err)
 	}
 
 	// Creates the document that will be used to scrape for episode metadata
 	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
-		return anirip.NewError("There was an error reading the episode doc", err)
+		return common.NewError("There was an error reading the episode doc", err)
 	}
 
 	// Request querystring
@@ -87,13 +87,13 @@ func (e *Episode) GetEpisodeInfo(client *anirip.HTTPClient, quality string) erro
 	header.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
 	resp, err = client.Post("http://www.crunchyroll.com/xml/?"+queryString, header, reqBody)
 	if err != nil {
-		return anirip.NewError("There was an error retrieving the manifest", err)
+		return common.NewError("There was an error retrieving the manifest", err)
 	}
 
 	// Gets the xml string from the recieved xml response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return anirip.NewError("There was an error reading the xml response", err)
+		return common.NewError("There was an error reading the xml response", err)
 	}
 
 	// Checks for an unsupported region first
@@ -101,7 +101,7 @@ func (e *Episode) GetEpisodeInfo(client *anirip.HTTPClient, quality string) erro
 	xmlString := string(body)
 	if strings.Contains(xmlString, "<code>") && strings.Contains(xmlString, "</code>") {
 		if strings.SplitN(strings.SplitN(xmlString, "<code>", 2)[1], "</code>", 2)[0] == "4" {
-			return anirip.NewError("This video is not available in your region", err)
+			return common.NewError("This video is not available in your region", err)
 		}
 	}
 
@@ -111,17 +111,17 @@ func (e *Episode) GetEpisodeInfo(client *anirip.HTTPClient, quality string) erro
 	if strings.Contains(xmlString, "<file>") && strings.Contains(xmlString, "</file>") {
 		eFile = strings.SplitN(strings.SplitN(xmlString, "<file>", 2)[1], "</file>", 2)[0]
 	} else {
-		return anirip.NewError("No hosts were found for the episode", err)
+		return common.NewError("No hosts were found for the episode", err)
 	}
 
 	e.Title = strings.Replace(strings.Replace(doc.Find("#showmedia_about_name").First().Text(), "“", "", -1), "”", "", -1)
-	e.Filename = anirip.CleanFilename(e.Filename + e.Title)
+	e.Filename = common.CleanFilename(e.Filename + e.Title)
 	e.StreamURL = strings.Replace(eFile, "amp;", "", -1)
 	return nil
 }
 
 // Download downloads entire episode to our temp directory
-func (e *Episode) Download(vp anirip.VideoProcessor) error {
+func (e *Episode) Download(vp *common.VideoProcessor) error {
 	return vp.DumpHLS(e.StreamURL)
 }
 

@@ -1,6 +1,6 @@
 package crunchyroll
 
-import "github.com/sdwolfe32/anirip/anirip"
+import "github.com/sdwolfe32/anirip/common"
 
 // Season contains season metadata and child episodes
 type Season struct {
@@ -16,9 +16,9 @@ func (s *Season) GetNumber() int {
 }
 
 // GetEpisodes copies the episodes on the Season and returns them as an
-// anirip.Episodes
-func (s *Season) GetEpisodes() anirip.Episodes {
-	episodes := []anirip.Episode{}
+// common.Episodes
+func (s *Season) GetEpisodes() common.Episodes {
+	episodes := []common.Episode{}
 	for i := 0; i < len(s.Episodes); i++ {
 		episodes = append(episodes, &s.Episodes[i])
 	}

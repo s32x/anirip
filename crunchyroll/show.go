@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sdwolfe32/anirip/anirip"
+	"github.com/sdwolfe32/anirip/common"
 )
 
 // Show contins show metadata and child seasons
@@ -18,16 +18,16 @@ type Show struct {
 }
 
 // Scrape appends all the seasons/episodes found for the show
-func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
+func (s *Show) Scrape(client *common.HTTPClient, showURL string) error {
 	res, err := client.Get(showURL, nil)
 	if err != nil {
-		return anirip.NewError("There was an error retrieving show page", err)
+		return common.NewError("There was an error retrieving show page", err)
 	}
 
 	// Creates the goquery document for scraping
 	showDoc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
-		return anirip.NewError("There was an error while accessing the show page", err)
+		return common.NewError("There was an error while accessing the show page", err)
 	}
 
 	// Sets Title, Path and URL on our show object
@@ -87,7 +87,7 @@ func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
 	for k1, season := range s.Seasons {
 		s.Seasons[k1].Number = k1 + 1
 		for k2, episode := range season.Episodes {
-			s.Seasons[k1].Episodes[k2].Filename = anirip.GenerateEpisodeFilename(s.Title, s.Seasons[k1].Number, episode.Number, "")
+			s.Seasons[k1].Episodes[k2].Filename = common.GenerateEpisodeFilename(s.Title, s.Seasons[k1].Number, episode.Number, "")
 		}
 	}
 
@@ -98,12 +98,12 @@ func (s *Show) Scrape(client *anirip.HTTPClient, showURL string) error {
 // Gets the title of the show for referencing outside of this lib
 func (show *Show) GetTitle() string {
 	//CleanFileName to remove illegal chars from show name, if any.
-	return anirip.CleanFilename(show.Title)
+	return common.CleanFilename(show.Title)
 }
 
 // Re-stores seasons belonging to the show and returns them for iteration
-func (show *Show) GetSeasons() anirip.Seasons {
-	seasons := []anirip.Season{}
+func (show *Show) GetSeasons() common.Seasons {
+	seasons := []common.Season{}
 	for i := 0; i < len(show.Seasons); i++ {
 		seasons = append(seasons, &show.Seasons[i])
 	}

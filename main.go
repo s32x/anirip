@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/sdwolfe32/anirip/anirip"
 	"github.com/sdwolfe32/anirip/crunchyroll"
-	"os"
 )
 
 var (

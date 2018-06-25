@@ -3,7 +3,6 @@ package anirip
 import (
 	"errors"
 	"fmt"
-	"github.com/robertkrimen/otto"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -14,6 +13,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/entrik/httpclient"
+	"github.com/robertkrimen/otto"
+)
+
+const (
+	uaList    = "https://raw.githubusercontent.com/cvandeplas/pystemon/master/user-agents.txt"
+	defaultUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36"
 )
 
 // HTTPClient performs
@@ -25,28 +32,34 @@ type HTTPClient struct {
 // NewHTTPClient generates a new HTTPClient Requester that contains a random
 // user-agent to emulate browser requests
 func NewHTTPClient() (*HTTPClient, error) {
-	resp, err := http.Get("https://raw.githubusercontent.com/cvandeplas/pystemon/master/user-agents.txt")
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	// Create the client and attach a cookie jar
 	client := &http.Client{}
 	client.Jar, _ = cookiejar.New(nil)
-
-	// Splits the user-agents into a slice and returns an HTTPClient with a random
-	// user-agent on the header
-	ua := strings.Split(string(b), "\n")
-	rand.Seed(time.Now().UnixNano())
 	return &HTTPClient{
 		Client:    client,
-		UserAgent: ua[rand.Intn(len(ua))],
+		UserAgent: randomUA(),
 	}, nil
+}
+
+// randomUA retrieves a list of user-agents and returns
+// a one randomly selected from the list
+func randomUA() string {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Retrieve the bytes of the user-agent list
+	useragents, err := httpclient.GetString(uaList)
+	if err != nil {
+		return defaultUA
+	}
+
+	// Split all user-agents into a slice and return a
+	// single random one
+	ua := strings.Split(useragents, "\n")
+	if len(ua) == 0 {
+		return defaultUA
+	}
+	return ua[rand.Intn(len(ua))]
 }
 
 // Post performs a POST request using the passed url and body using the

@@ -23,6 +23,6 @@ type Episodes []Episode
 type Episode interface {
 	GetEpisodeInfo(client *HTTPClient, quality string) error
 	Download(vp VideoProcessor) error
-	DownloadSubtitles(client *HTTPClient, language string, tempDir string) (string, error)
+	DownloadSubtitles(client *HTTPClient, language, tempDir string) (string, error)
 	GetFilename() string
 }

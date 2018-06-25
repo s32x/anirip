@@ -8,6 +8,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sdwolfe32/anirip/common"
+	"github.com/sdwolfe32/anirip/common/log"
 )
 
 // Login logs the user in to Crunchyroll and stores the session on the client
@@ -35,6 +36,7 @@ func Login(c *common.HTTPClient, user, pass string) error {
 	if err := validateSession(c); err != nil {
 		return err
 	}
+	log.Info("Successfully logged in!")
 	return nil
 }
 
@@ -53,8 +55,7 @@ func createSession(c *common.HTTPClient, user, pass, token string) error {
 	head := http.Header{}
 	head.Add("Referer", "https://www.crunchyroll.com/login")
 	head.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err := c.Post("https://www.crunchyroll.com/login", head, body)
-	if err != nil {
+	if _, err := c.Post("https://www.crunchyroll.com/login", head, body); err != nil {
 		return common.NewError("Failed to execute authentication request", err)
 	}
 	return nil

@@ -16,6 +16,7 @@ import (
 
 	"github.com/entrik/httpclient"
 	"github.com/robertkrimen/otto"
+	"github.com/sdwolfe32/anirip/common/log"
 )
 
 const (
@@ -104,6 +105,7 @@ func (c *HTTPClient) request(req *http.Request) (*http.Response, error) {
 
 	// If the server is in IUAM mode, solve the challenge and retry
 	if res.StatusCode == 503 && res.Header.Get("Server") == "cloudflare" {
+		log.Warn("Performing IUAM bypass (this sometimes takes several tries)...")
 		defer res.Body.Close()
 		var rb []byte
 		rb, err = ioutil.ReadAll(res.Body)
@@ -118,11 +120,38 @@ func (c *HTTPClient) request(req *http.Request) (*http.Response, error) {
 // bypass attempts to re-execute a standard request after first bypassing
 // Cloudflares I'm Under Attack Mode
 func (c *HTTPClient) bypassCF(req *http.Request, body []byte) (*http.Response, error) {
-	_, ov, _ := otto.Run(extractChallenge(body))
+	// Strip out the full challenge script
+	r1, _ := regexp.Compile(`setTimeout\(function\(\){\s+(var s,t,o,p,b,r,e,a,k,i,n,g,f.+?\r?\n[\s\S]+?a\.value =.+?)\r?\n`)
+	r1Match := r1.FindSubmatch(body)
+	if len(r1Match) != 2 {
+		return nil, errors.New("Failed to match on IUAM challenge")
+	}
+	js := string(r1Match[1])
+
+	// Remove any DOM manipulation
+	r3, _ := regexp.Compile(`\s{3,}[a-z](?: = |\.).+`)
+	r4, _ := regexp.Compile(`[\n\\']`)
+	js = r3.ReplaceAllString(js, "")
+	js = r4.ReplaceAllString(js, "")
+
+	// Trim off anything after the last semicolon
+	lastSemicolon := strings.LastIndex(js, ";")
+	if lastSemicolon >= 0 {
+		js = js[:lastSemicolon]
+	}
+
+	// Replace t.length with the length of the url
+	js = strings.Replace(js, " + t.length", " + "+strconv.Itoa(len(req.URL.Host)), -1)
+
+	// Replace a.value with the otto selector and return
+	js = strings.Replace(js, "a.value", "$1", -1)
+
+	// Run the script with otto, storing the result in ov
+	_, ov, _ := otto.Run(js)
 	answerI, _ := strconv.ParseFloat(ov.String(), 64)
 
 	// Extracts the challenge variables needed from the HTML
-	vc, _ := regexp.Compile(`name="jschl_vc" value="(\w+)"`)
+	vc, _ := regexp.Compile(`name="jschl_vc" value="(.+?)"`)
 	pass, _ := regexp.Compile(`name="pass" value="(.+?)"`)
 	vcMatch := vc.FindSubmatch(body)
 	passMatch := pass.FindSubmatch(body)
@@ -136,39 +165,13 @@ func (c *HTTPClient) bypassCF(req *http.Request, body []byte) (*http.Response, e
 	query := u.Query()
 	query.Set("jschl_vc", string(vcMatch[1]))
 	query.Set("pass", string(passMatch[1]))
-	query.Set("jschl_answer", strconv.FormatFloat(answerI+float64(len(u.Host)), 'f', 10, 64))
+	query.Set("jschl_answer", fmt.Sprintf("%g", answerI))
 	u.RawQuery = query.Encode()
-	req.Header.Add("Referer", req.URL.String())
 
 	// Execute, populate cookies after 5 seconds and re-execute prior request
-	time.Sleep(5000 * time.Millisecond)
-	_, err := c.Get(u.String(), nil)
-	if err != nil {
+	time.Sleep(4000 * time.Millisecond)
+	if _, err := c.Get(u.String(), nil); err != nil {
 		return nil, err
 	}
 	return c.request(req)
-}
-
-// extractChallenge extracts the IUAM challenge javascript from the page body
-func extractChallenge(body []byte) string {
-	r1, _ := regexp.Compile(`setTimeout\(function\(\){\s+(var s,t,o,p,b,r,e,a,k,i,n,g,f.+?\r?\n[\s\S]+?a\.value =.+?)\r?\n`)
-	r3, _ := regexp.Compile(`\s{3,}[a-z](?: = |\.).+`)
-	r4, _ := regexp.Compile(`[\n\\']`)
-	r1Match := r1.FindSubmatch(body)
-
-	if len(r1Match) != 2 {
-		return ""
-	}
-
-	js := string(r1Match[1])
-	// js = r2.ReplaceAllString(js, "$1")
-	js = r3.ReplaceAllString(js, "")
-	js = r4.ReplaceAllString(js, "")
-	lastSemicolon := strings.LastIndex(js, ";")
-	if lastSemicolon >= 0 {
-		js = js[:lastSemicolon]
-	}
-	js = strings.Replace(js, "a.value", "$1", -1)
-	js = strings.Replace(js, "+ t.length", "", -1)
-	return js
 }

@@ -10,7 +10,7 @@ anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 ```
 ## Setup Guide (EASY)
 
-**1)** Download the [latest release](https://github.com/sdwolfe32/anirip/releases).
+**1)** Download the [latest release](https://github.com/s32x/anirip/releases).
 
 **2)** Extract and cd into the release directory.
 

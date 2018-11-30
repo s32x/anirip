@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/sdwolfe32/anirip/common"
-	"github.com/sdwolfe32/anirip/common/log"
-	"github.com/sdwolfe32/anirip/crunchyroll"
+	"github.com/s32x/anirip/common"
+	"github.com/s32x/anirip/common/log"
+	"github.com/s32x/anirip/crunchyroll"
 )
 
 var (

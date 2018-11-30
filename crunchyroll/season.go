@@ -1,6 +1,6 @@
 package crunchyroll
 
-import "github.com/sdwolfe32/anirip/common"
+import "github.com/s32x/anirip/common"
 
 // Season contains season metadata and child episodes
 type Season struct {

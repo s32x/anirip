@@ -16,7 +16,7 @@ import (
 
 	"github.com/entrik/httpclient"
 	"github.com/robertkrimen/otto"
-	"github.com/sdwolfe32/anirip/common/log"
+	"github.com/s32x/anirip/common/log"
 )
 
 const (

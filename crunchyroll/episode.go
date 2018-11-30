@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sdwolfe32/anirip/common"
+	"github.com/s32x/anirip/common"
 )
 
 var (
@@ -64,12 +64,12 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 
 	// Request querystring
 	queryString := url.Values{
-		"req":           {"RpcApiVideoPlayer_GetStandardConfig"},
-		"media_id":      {strconv.Itoa(e.ID)},
-		"video_format":  {getMapping(e.Quality, formats)},
-		"video_quality": {getMapping(e.Quality, qualities)},
-		"auto_play":     {"1"},
-		"aff":           {"crunchyroll-website"},
+		"req":                     {"RpcApiVideoPlayer_GetStandardConfig"},
+		"media_id":                {strconv.Itoa(e.ID)},
+		"video_format":            {getMapping(e.Quality, formats)},
+		"video_quality":           {getMapping(e.Quality, qualities)},
+		"auto_play":               {"1"},
+		"aff":                     {"crunchyroll-website"},
 		"show_pop_out_controls":   {"1"},
 		"pop_out_disable_message": {""},
 		"click_through":           {"0"},

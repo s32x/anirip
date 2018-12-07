@@ -1,11 +1,11 @@
-package main
+package main /* import "s32x.com/anirip" */
 
 import (
 	"os"
 
-	"github.com/s32x/anirip/common"
-	"github.com/s32x/anirip/common/log"
-	"github.com/s32x/anirip/crunchyroll"
+	"s32x.com/anirip/common"
+	"s32x.com/anirip/common/log"
+	"s32x.com/anirip/crunchyroll"
 )
 
 var (
@@ -26,12 +26,12 @@ var (
 )
 
 func main() {
-	log.Cyan("v1.5.0(6/14/2017) - by Steven Wolfe <steven@swolfe.me>")
+	log.Cyan("v1.5.1(12/6/2018) - by Steven Wolfe <steven@swolfe.me>")
 	args := os.Args
 
 	// If the user isn't using the cli correctly give them an example of how
 	if len(os.Args) != 4 {
-		log.Warn("CLI usage : anirip username password http://www.crunchyrollog.com/miss-kobayashis-dragon-maid")
+		log.Warn("CLI usage : anirip username password http://www.crunchyroll.com/miss-kobayashis-dragon-maid")
 		return
 	}
 	download(args[3], args[1], args[2], "1080", "eng")

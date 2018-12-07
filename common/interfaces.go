@@ -1,4 +1,4 @@
-package common
+package common /* import "s32x.com/anirip/common" */
 
 // Show implements Show functionality
 type Show interface {

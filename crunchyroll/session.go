@@ -1,4 +1,4 @@
-package crunchyroll
+package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/s32x/anirip/common"
-	"github.com/s32x/anirip/common/log"
+	"s32x.com/anirip/common"
+	"s32x.com/anirip/common/log"
 )
 
 // Login logs the user in to Crunchyroll and stores the session on the client

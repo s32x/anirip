@@ -1,11 +1,11 @@
-package crunchyroll
+package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
 	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/s32x/anirip/common"
+	"s32x.com/anirip/common"
 )
 
 // Show contins show metadata and child seasons

@@ -1,4 +1,4 @@
-package common
+package common /* import "s32x.com/anirip/common" */
 
 import (
 	"os"

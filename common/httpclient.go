@@ -1,4 +1,4 @@
-package common
+package common /* import "s32x.com/anirip/common" */
 
 import (
 	"errors"
@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/entrik/httpclient"
 	"github.com/robertkrimen/otto"
-	"github.com/s32x/anirip/common/log"
+	"s32x.com/anirip/common/log"
+	"s32x.com/httpclient"
 )
 
 const (

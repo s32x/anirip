@@ -1,4 +1,4 @@
-package crunchyroll
+package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/s32x/anirip/common"
+	"s32x.com/anirip/common"
 )
 
 type SubListResults struct {

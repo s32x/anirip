@@ -26,8 +26,8 @@ anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 
 **4)** `cd` into the `anirip` repository directory and execute the following commands:
 ```
-$ go get
-$ go install
+$ go get s32x.com/anirip
+$ anirip
 ```
 
 **5)** Follow the usage instructions above.

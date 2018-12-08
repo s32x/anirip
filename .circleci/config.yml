@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/s32x.com/anirip
+    docker:
+      - image: circleci/golang:1.11.2
+    steps:
+      - checkout
+      - run:
+          name: Run unit tests
+          command: make test

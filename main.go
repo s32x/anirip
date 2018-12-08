@@ -26,7 +26,7 @@ var (
 )
 
 func main() {
-	log.Cyan("v1.5.1(12/6/2018) - by Steven Wolfe <steven@swolfe.me>")
+	log.Cyan("v1.5.2(12/8/2018) - by Steven Wolfe <steven@swolfe.me>")
 	args := os.Args
 
 	// If the user isn't using the cli correctly give them an example of how

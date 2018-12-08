@@ -1,8 +1,6 @@
 deps:
-	-rm Gopkg.toml
-	-rm Gopkg.lock
 	-rm -r vendor
-	dep init
+	dep ensure
 test:
 	go clean
 	go test ./...

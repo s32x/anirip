@@ -1,38 +1,31 @@
-# anirip
-A Crunchyroll & Daisuki episode/subtitle ripper written in GO
+<p align="center">
+<img src="logo.png" width="310" height="112" border="0" alt="anirip">
+<br>
+<a href="https://circleci.com/gh/s32x/anirip/tree/master"><img src="https://circleci.com/gh/s32x/anirip/tree/master.svg?style=svg" alt="CircleCI"></a>
+<a href="https://goreportcard.com/report/s32x.com/anirip"><img src="https://goreportcard.com/badge/s32x.com/anirip" alt="Go Report Card"></a>
+<a href="https://godoc.org/s32x.com/anirip"><img src="https://godoc.org/s32x.com/anirip?status.svg" alt="GoDoc"></a>
+</p>
 
-![alt text](/images/anirip130.jpg "anirip v1.3.0 Screenshot")
+`anirip` is a Crunchyroll episode/subtitle ripper written in Go. It performs all actions associated with downloading video segments, subtitle files, and metadata and muxes them together appropriately.
 
-## Usage
+## Getting Started
+
+### Installing
+
+**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it doesn't already exist on your system. We will using this tool primarily for dumping episode content and editing video metadata.
+
+**2)** Install [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip) if it doesn't already exist on your system. We use this in order to clean up metadata after each episode has been dumped.
+
+**3)** Install Go and run `go get`. This installs the anirip binary on your local system.
+```
+$ go get -u s32x.com/anirip
+```
+
+### Usage
 To download shows from Crunchyroll :
 ```
 anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 ```
-## Setup Guide (EASY)
-
-**1)** Download the [latest release](https://github.com/s32x/anirip/releases).
-
-**2)** Extract and cd into the release directory.
-
-**5)** Follow the usage instructions above.
-
-## Setup Guide (HARD)
-
-**1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it isn't already installed on your system. We will using this tool primarily for dumping episode content and editing video metadata.
-
-**2)** Install [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip) if it isnt' already installed on your system. We use this in order to clean up metadata after each episode has been dumped.
-
-**3)** Clone the `anirip` repository.
-
-**4)** `cd` into the `anirip` repository directory and execute the following commands:
-```
-$ go get s32x.com/anirip
-$ anirip
-```
-
-**5)** Follow the usage instructions above.
-
-Note : When I say "Install", I mean you need to set these executables up in your PATH OR relatively next to your anirip binary so that anirip can access them directly from the command line.
 
 ## Disclaimer
 This repo/project was written as an educational intro to web-scraping and network analysis. It is provided publicly as a an open source project for nothing other than educational purposes. I do not take responsibility for how you use this software nor do I recommend you use it in any way that may infringe on Crunchyroll as a business.
@@ -43,7 +36,7 @@ This application is not endorsed or affiliated with any anime stream provider. T
 The MIT License (MIT)
 =====================
 
-Copyright © 2017 Steven Wolfe
+Copyright © 2018 Steven Wolfe
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

@@ -6,6 +6,10 @@
 <a href="https://godoc.org/s32x.com/anirip"><img src="https://godoc.org/s32x.com/anirip?status.svg" alt="GoDoc"></a>
 </p>
 
+<p align="center">
+<img src="graphic.png" width="650px" height="461px" alt="ipdata curl">
+</p>
+
 `anirip` is a Crunchyroll episode/subtitle ripper written in Go. It performs all actions associated with downloading video segments, subtitle files, and metadata and muxes them together appropriately.
 
 ## Getting Started
@@ -18,7 +22,7 @@
 
 **3)** Install Go and run `go get`. This installs the anirip binary on your local system.
 ```
-$ go get -u s32x.com/anirip
+$ go get s32x.com/anirip
 ```
 
 ### Usage

@@ -53,7 +53,7 @@ func download(showURL, user, pass, quality, subLang string) {
 	}
 
 	// Logs the user in and stores their session data in the clients jar
-	log.Info("Logging into Crunchyroll as %s...	", user)
+	log.Info("Logging into Crunchyroll...")
 	if err = crunchyroll.Login(client, user, pass); err != nil {
 		log.Error(err)
 		return
@@ -62,7 +62,7 @@ func download(showURL, user, pass, quality, subLang string) {
 	// Scrapes all show metadata for the show requested
 	var show common.Show
 	show = new(crunchyroll.Show)
-	log.Info("Scraping show metadata for %s", show.GetTitle())
+	log.Info("Scraping show metadata...")
 	if err = show.Scrape(client, showURL); err != nil {
 		log.Error(err)
 		return

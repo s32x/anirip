@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-<img src="graphic.png" width="650px" height="461px" alt="ipdata curl">
+<img src="graphic.png" width="750px" height="513px" alt="anirip command">
 </p>
 
 `anirip` is a Crunchyroll episode/subtitle ripper written in Go. It performs all actions associated with downloading video segments, subtitle files, and metadata and muxes them together appropriately.

@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /go/src/s32x.com/anirip
     docker:
-      - image: circleci/golang:1.11.2
+      - image: circleci/golang:1.11.3
     steps:
       - checkout
       - run:

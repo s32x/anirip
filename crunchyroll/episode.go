@@ -90,7 +90,7 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 		return common.NewError("There was an error retrieving the manifest", err)
 	}
 
-	// Gets the xml string from the recieved xml response body
+	// Gets the xml string from the received xml response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return common.NewError("There was an error reading the xml response", err)

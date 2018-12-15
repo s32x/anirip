@@ -45,9 +45,6 @@ func NewHTTPClient() (*HTTPClient, error) {
 // randomUA retrieves a list of user-agents and returns a
 // one randomly selected from the list
 func randomUA() string {
-	// Seed the random number generator
-	rand.Seed(time.Now().UnixNano())
-
 	// Retrieve the bytes of the user-agent list
 	useragents, err := httpclient.GetString(uaList)
 	if err != nil {

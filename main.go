@@ -1,7 +1,9 @@
 package main /* import "s32x.com/anirip" */
 
 import (
+	"math/rand"
 	"os"
+	"time"
 
 	"s32x.com/anirip/common"
 	"s32x.com/anirip/common/log"
@@ -26,6 +28,8 @@ var (
 )
 
 func main() {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
 	log.Cyan("v1.5.2(12/8/2018) - by Steven Wolfe <steven@swolfe.me>")
 	args := os.Args
 
@@ -118,13 +122,6 @@ func download(showURL, user, pass, quality, subLang string) {
 				continue
 			}
 
-			// Cleans the MKVs metadata for better reading by clients
-			log.Info("Cleaning MKV...")
-			if err := vp.CleanMKV(); err != nil {
-				log.Error(err)
-				continue
-			}
-
 			// Moves the episode to the appropriate season sub-directory
 			if err := common.Rename(tempDir+string(os.PathSeparator)+"episode.mkv",
 				show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()]+
@@ -134,7 +131,7 @@ func download(showURL, user, pass, quality, subLang string) {
 			log.Success("Downloading and merging completed successfully!")
 		}
 	}
-	log.Cyan("Completed downloading episodes form %s", show.GetTitle())
+	log.Cyan("Completed downloading episodes from %s", show.GetTitle())
 	log.Info("Cleaning up temporary directory...")
 	os.RemoveAll(tempDir)
 }

@@ -18,9 +18,7 @@
 
 **1)** Install [`ffmpeg`](https://ffmpeg.org/download.html) if it doesn't already exist on your system. We will using this tool primarily for dumping episode content and editing video metadata.
 
-**2)** Install [`mkclean`](https://sourceforge.net/projects/matroska/files/mkclean/mkclean-win32.v0.8.7.zip) if it doesn't already exist on your system. We use this in order to clean up metadata after each episode has been dumped.
-
-**3)** Install Go and run `go get`. This installs the anirip binary on your local system.
+**2)** Install Go and run `go get`. This installs the anirip binary on your local system.
 ```
 $ go get s32x.com/anirip
 ```

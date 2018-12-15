@@ -1,5 +1,5 @@
 hash: 9ffc0e4283751a68fb3671e77667515bc369239ba4a507e16de74d04671b6205
-updated: 2018-12-14T21:12:43.156504-07:00
+updated: 2018-12-15T15:44:42.706324-07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 680b6a57bda4f657485ad44bdea42342ead737bc
@@ -34,5 +34,5 @@ imports:
   subpackages:
   - base64vlq
 - name: s32x.com/httpclient
-  version: 7854cfe073d3ae92726b8fd10ba8779cfcce146f
+  version: 1edd92c410ce1e5cdcd11be9f23d6a2d89e5c2a4
 testImports: []

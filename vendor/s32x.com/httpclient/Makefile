@@ -3,10 +3,10 @@ clean:
 deps:
 	make clean
 	-rm -rf vendor
-	-rm -f go.mod
-	-rm -f go.sum
-	env GO111MODULE=on go mod init
-	env GO111MODULE=on go mod vendor
+	-rm -r glide.yaml
+	-rm -f glide.lock
+	glide init --non-interactive
+	glide install
 test:
 	go clean
 	go test ./...

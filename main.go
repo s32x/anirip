@@ -1,10 +1,12 @@
 package main /* import "s32x.com/anirip" */
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"time"
 
+	"github.com/urfave/cli"
 	"s32x.com/anirip/common"
 	"s32x.com/anirip/common/log"
 	"s32x.com/anirip/crunchyroll"
@@ -30,19 +32,46 @@ var (
 func main() {
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
-	log.Cyan("v1.5.2(12/8/2018) - by Steven Wolfe <steven@swolfe.me>")
-	args := os.Args
 
-	// If the user isn't using the cli correctly give them an example of how
-	if len(os.Args) != 4 {
-		log.Warn("CLI usage : anirip username password http://www.crunchyroll.com/miss-kobayashis-dragon-maid")
-		return
+	app := cli.NewApp()
+	app.Name = "anirip"
+	app.Version = "1.5.2(12/8/2018)"
+	app.Author = "Steven Wolfe"
+	app.Email = "steven@swolfe.me"
+	app.Usage = "anirip username password http://www.crunchyroll.com/miss-kobayashis-dragon-maid"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "language, l",
+			Value: "eng",
+			Usage: "language code for the subtitles (not all are supported) ex: eng, esp",
+		},
+		cli.StringFlag{
+			Name:  "quality, q",
+			Value: "1080",
+			Usage: "quality of video to download ex: 1080, 720, 480, 360, android",
+		},
 	}
-	download(args[3], args[1], args[2], "1080", "eng")
+
+	app.Action = func(c *cli.Context) error {
+		log.Cyan("v%s - by %s <%s>", app.Version, app.Author, app.Email)
+		args := c.Args()
+		if len(args) != 3 {
+			log.Warn("CLI Usage : " + app.Usage)
+			return nil
+		}
+
+		download(args[2], args[0], args[1], c.String("lang"), c.String("lang"))
+		return nil
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func download(showURL, user, pass, quality, subLang string) {
-	// Verifies the existance of an anirip folder in our temp directory
+	// Verifies the existence of an anirip folder in our temp directory
 	_, err := os.Stat(tempDir)
 	if err != nil {
 		log.Info("Generating new temporary directory")
@@ -85,7 +114,7 @@ func download(showURL, user, pass, quality, subLang string) {
 
 			// Retrieves more fine grained episode metadata
 			log.Info("Retrieving Episode Info...")
-			if err = episode.GetEpisodeInfo(client, "1080"); err != nil {
+			if err = episode.GetEpisodeInfo(client, quality); err != nil {
 				log.Error(err)
 				continue
 			}

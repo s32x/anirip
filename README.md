@@ -26,6 +26,7 @@ $ go get s32x.com/anirip
 ### Usage
 To download shows from Crunchyroll :
 ```
+anirip --help
 anirip myUsername0123 myPassword5535 http://www.crunchyroll.com/strike-the-blood
 ```
 

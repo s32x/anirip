@@ -1,5 +1,5 @@
-hash: 9ffc0e4283751a68fb3671e77667515bc369239ba4a507e16de74d04671b6205
-updated: 2018-12-15T15:44:42.706324-07:00
+hash: 2685c9fae390d3bfe974b09e1a6b7c6859aa006fd377c30caac6e9dd85e6fbff
+updated: 2018-12-16T12:34:26.553961-07:00
 imports:
 - name: github.com/andybalholm/cascadia
   version: 680b6a57bda4f657485ad44bdea42342ead737bc
@@ -20,6 +20,8 @@ imports:
   - parser
   - registry
   - token
+- name: github.com/urfave/cli
+  version: b67dcf995b6a7b7f14fad5fcb7cc5441b05e814b
 - name: golang.org/x/net
   version: 891ebc4b82d6e74f468c533b06f983c7be918a96
   subpackages:

@@ -54,30 +54,30 @@ type ScriptStyles struct {
 }
 
 type Style struct {
-	ID             int    `xml:"id,attr"`
-	Name           string `xml:"name,attr"`
-	FontName       string `xml:"font_name,attr"`
-	FontSize       int    `xml:"font_size,attr"`
-	PrimaryColor   string `xml:"primary_colour,attr"`
-	SecondaryColor string `xml:"secondary_colour,attr"`
-	OutlineColor   string `xml:"outline_colour,attr"`
-	BackColor      string `xml:"back_colour,attr"`
-	Bold           int    `xml:"bold,attr"`
-	Italic         int    `xml:"italic,attr"`
-	Underline      int    `xml:"underline,attr"`
-	Strikeout      int    `xml:"strikeout,attr"`
-	ScaleX         int    `xml:"scale_x,attr"`
-	ScaleY         int    `xml:"scale_y,attr"`
-	Spacing        int    `xml:"spacing,attr"`
-	Angle          int    `xml:"angle,attr"`
-	BorderStyle    int    `xml:"border_style,attr"`
-	Outline        int    `xml:"outline,attr"`
-	Shadow         int    `xml:"shadow,attr"`
-	Alignment      int    `xml:"alignment,attr"`
-	MarginLeft     string `xml:"margin_l,attr"`
-	MarginRight    string `xml:"margin_r,attr"`
-	MarginVert     string `xml:"margin_v,attr"`
-	Encoding       int    `xml:"encoding,attr"`
+	ID             int    		`xml:"id,attr"`
+	Name           string 		`xml:"name,attr"`
+	FontName       string 		`xml:"font_name,attr"`
+	FontSize       int    		`xml:"font_size,attr"`
+	PrimaryColor   string 		`xml:"primary_colour,attr"`
+	SecondaryColor string 		`xml:"secondary_colour,attr"`
+	OutlineColor   string 		`xml:"outline_colour,attr"`
+	BackColor      string 		`xml:"back_colour,attr"`
+	Bold           int    		`xml:"bold,attr"`
+	Italic         int    		`xml:"italic,attr"`
+	Underline      int    		`xml:"underline,attr"`
+	Strikeout      int    		`xml:"strikeout,attr"`
+	ScaleX         int    		`xml:"scale_x,attr"`
+	ScaleY         int    		`xml:"scale_y,attr"`
+	Spacing        int    		`xml:"spacing,attr"`
+	Angle          float32    	`xml:"angle,attr"`
+	BorderStyle    int    		`xml:"border_style,attr"`
+	Outline        int    		`xml:"outline,attr"`
+	Shadow         int    		`xml:"shadow,attr"`
+	Alignment      int    		`xml:"alignment,attr"`
+	MarginLeft     string 		`xml:"margin_l,attr"`
+	MarginRight    string 		`xml:"margin_r,attr"`
+	MarginVert     string 		`xml:"margin_v,attr"`
+	Encoding       int    		`xml:"encoding,attr"`
 }
 
 type ScriptEvents struct {
@@ -295,7 +295,7 @@ func formatSubtitles(subString string) (string, error) {
 			strconv.Itoa(style.ScaleX) + "," +
 			strconv.Itoa(style.ScaleY) + "," +
 			strconv.Itoa(style.Spacing) + "," +
-			strconv.Itoa(style.Angle) + "," +
+			fmt.Sprintf("%f", style.Angle) + "," +
 			strconv.Itoa(style.BorderStyle) + "," +
 			strconv.Itoa(style.Outline) + "," +
 			strconv.Itoa(style.Shadow) + "," +

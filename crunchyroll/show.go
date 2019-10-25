@@ -31,7 +31,7 @@ func (s *Show) Scrape(client *common.HTTPClient, showURL string) error {
 	}
 
 	// Sets Title, Path and URL on our show object
-	s.Title = showDoc.Find("#container > h1 > span").First().Text()
+	s.Title = showDoc.Find("#showview-content-header > div > h1 > span").First().Text()
 	s.URL = showURL
 	s.Path = strings.Replace(s.URL, "http://www.crunchyroll.com", "", 1)
 

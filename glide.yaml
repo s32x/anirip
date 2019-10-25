@@ -1,7 +1,0 @@
-package: s32x.com/anirip
-import:
-- package: github.com/PuerkitoBio/goquery
-- package: github.com/fatih/color
-- package: github.com/robertkrimen/otto
-- package: github.com/urfave/cli
-- package: s32x.com/httpclient

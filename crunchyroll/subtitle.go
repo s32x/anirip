@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"regexp"
 
 	"s32x.com/anirip/common"
@@ -37,6 +38,8 @@ func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language st
 	subOutput := tempDir + string(os.PathSeparator) + "subtitles.episode.ass"
 	// Remove stale temp file to avoid conflicts in writing
 	os.Remove(subOutput)
+
+	language = strings.ReplaceAll(language, "-", "")
 
 	// Fetch html page for the episode
 	res, err := client.Get(episode.URL, nil)

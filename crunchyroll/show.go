@@ -1,6 +1,7 @@
 package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -21,13 +22,13 @@ type Show struct {
 func (s *Show) Scrape(client *common.HTTPClient, showURL string) error {
 	res, err := client.Get(showURL, nil)
 	if err != nil {
-		return common.NewError("There was an error retrieving show page", err)
+		return fmt.Errorf("getting show page: %w", err)
 	}
 
 	// Creates the goquery document for scraping
 	showDoc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
-		return common.NewError("There was an error while accessing the show page", err)
+		return fmt.Errorf("generating show document: %w", err)
 	}
 
 	// Sets Title, Path and URL on our show object

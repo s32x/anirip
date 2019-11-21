@@ -2,6 +2,7 @@ package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,12 +17,13 @@ func Login(c *common.HTTPClient, user, pass string) error {
 	// Perform preflight request to retrieve the login page
 	res, err := c.Get("https://www.crunchyroll.com/login", nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting login page: %w", err)
 	}
+
 	defer res.Body.Close()
 	doc, err := goquery.NewDocumentFromResponse(res)
 	if err != nil {
-		return err
+		return fmt.Errorf("generating login document: %w", err)
 	}
 
 	// Scrape the login token
@@ -29,12 +31,12 @@ func Login(c *common.HTTPClient, user, pass string) error {
 
 	// Sets the credentials and attempts to generate new cookies
 	if err := createSession(c, user, pass, token); err != nil {
-		return err
+		return fmt.Errorf("creating session: %w", err)
 	}
 
 	// Validates the session created and returns
 	if err := validateSession(c); err != nil {
-		return err
+		return fmt.Errorf("validating session: %w", err)
 	}
 	log.Info("Successfully logged in!")
 	return nil
@@ -56,7 +58,7 @@ func createSession(c *common.HTTPClient, user, pass, token string) error {
 	head.Add("Referer", "https://www.crunchyroll.com/login")
 	head.Add("Content-Type", "application/x-www-form-urlencoded")
 	if _, err := c.Post("https://www.crunchyroll.com/login", head, body); err != nil {
-		return common.NewError("Failed to execute authentication request", err)
+		return fmt.Errorf("posting auth request: %w", err)
 	}
 	return nil
 }
@@ -66,17 +68,17 @@ func createSession(c *common.HTTPClient, user, pass, token string) error {
 func validateSession(c *common.HTTPClient) error {
 	resp, err := c.Get("http://www.crunchyroll.com/", nil)
 	if err != nil {
-		return common.NewError("Failed to execute session validation request", err)
+		return fmt.Errorf("getting validation page: %w", err)
 	}
 
 	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
-		return common.NewError("Failed to parse session validation page", err)
+		return fmt.Errorf("generating validation document: %w", err)
 	}
 
 	user := strings.TrimSpace(doc.Find("li.username").First().Text())
 	if resp.StatusCode == 200 && user != "" {
 		return nil
 	}
-	return common.NewError("Failed to verify session", nil)
+	return fmt.Errorf("could not verify session")
 }

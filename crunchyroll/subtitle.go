@@ -3,10 +3,10 @@ package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
+	"regexp"
 
 	"s32x.com/anirip/common"
 )
@@ -34,45 +34,41 @@ type configStruct struct {
 
 // DownloadSubtitles entirely downloads subtitles to our temp directory
 func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language string, tempDir string) (string, error) {
-	// Remove stale temp file to avoid conflicts in func
-	os.Remove(tempDir + string(os.PathSeparator) + "subtitles.episode.ass")
-
-	// Subtitle language (The only two I know fo are enUS and jaJP)
-	subLang := "enUS"
+	subOutput := tempDir + string(os.PathSeparator) + "subtitles.episode.ass"
+	// Remove stale temp file to avoid conflicts in writing
+	os.Remove(subOutput)
 
 	// Fetch html page for the episode
-	var body []byte
-	if res, err := client.Get(episode.URL, nil); err == nil {
-		defer res.Body.Close()
-		if body, err = ioutil.ReadAll(res.Body); err != nil {
-			return "", err
-		}
-	} else {
-		return "", err
+	res, err := client.Get(episode.URL, nil)
+	if err != nil {
+		return "", fmt.Errorf("getting episode page: %w", err)
 	}
 
-	// Find the vilos config table and split the area after it. 
-	// Then, trim away the "vilos.config.media = " to produce a json table in string form
-	stringBody := string(body)
-	mediaConfigIndex := strings.Index(stringBody, "vilos.config.media")
-	newResult := strings.SplitAfter(stringBody[mediaConfigIndex:], "}]}")
-	jsonReady := strings.TrimPrefix(newResult[0], "vilos.config.media = ")
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", fmt.Errorf("reading episode response: %w", err)
+	}
 
-	// Parse json string to configStruct
+	jsonResult := regexp.MustCompile("vilos.config.media = (.*);\n").FindSubmatch(body)
+
+	if jsonResult == nil {
+		return "", fmt.Errorf("finding vilos config")
+	}
+
 	var subStruct configStruct
-	if err := json.Unmarshal([]byte(jsonReady), &subStruct); err != nil {
-		return "", err
+	if err := json.Unmarshal(jsonResult[1], &subStruct); err != nil {
+		return "", fmt.Errorf("unmarshaling json: %w", err)
 	}
-
 	// Verify that there are actually subtitles
 	if len(subStruct.Subtitles) == 0 {
-		return "", errors.New("No subtitle files found(?)")
+		return "", fmt.Errorf("no subtitles found (?)")
 	}
 
 	// Determine the best subtitle (I know it currently defaults to enUS but it can be fixed later)
 	chosenSubtitle := subStruct.Subtitles[0]
 	for _, sub := range subStruct.Subtitles {
-		if sub.Language == subLang {
+		if sub.Language == language {
 			chosenSubtitle = sub
 			break
 		}
@@ -81,7 +77,7 @@ func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language st
 	// Fetch the download page for the chosen subtitle (the page that's returned is the decrypted subtitles in ass format)
 	subResp, err := client.Get(chosenSubtitle.DownloadURL, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting download url: %w", err)
 	}
 
 	// Read the subtitles and output them to the subtitles.episode.ass file in the temp directory
@@ -89,8 +85,8 @@ func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language st
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(subResp.Body)
 
-	if err := ioutil.WriteFile(tempDir + string(os.PathSeparator) + "subtitles.episode.ass", buf.Bytes(), 0777); err != nil {
-		return "", err
+	if err := ioutil.WriteFile(subOutput, buf.Bytes(), os.ModePerm); err != nil {
+		return "", fmt.Errorf("writing file: %w", err)
 	}
-	return subLang, nil
+	return language, nil
 }

@@ -1,7 +1,6 @@
 package common /* import "s32x.com/anirip/common" */
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,14 +31,15 @@ type HTTPClient struct {
 
 // NewHTTPClient generates a new HTTPClient Requester that
 // contains a random user-agent to emulate browser requests
-func NewHTTPClient() (*HTTPClient, error) {
+func NewHTTPClient() *HTTPClient {
 	// Create the client and attach a cookie jar
 	client := &http.Client{}
 	client.Jar, _ = cookiejar.New(nil)
+
 	return &HTTPClient{
 		Client:    client,
 		UserAgent: randomUA(),
-	}, nil
+	}
 }
 
 // randomUA retrieves a list of user-agents and returns a
@@ -81,7 +81,7 @@ func (c *HTTPClient) Get(url string, header http.Header) (*http.Response, error)
 	// Assemble our request and attach all headers and cookies
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating GET request: %w", err)
 	}
 	if header != nil {
 		req.Header = header
@@ -97,7 +97,7 @@ func (c *HTTPClient) request(req *http.Request) (*http.Response, error) {
 	// Executes the request
 	res, err := c.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("processing request: %w", err)
 	}
 
 	// If the server is in IUAM mode, solve the challenge and retry
@@ -107,11 +107,11 @@ func (c *HTTPClient) request(req *http.Request) (*http.Response, error) {
 		var rb []byte
 		rb, err = ioutil.ReadAll(res.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading IUAM response: %w", err)
 		}
 		return c.bypassCF(req, rb)
 	}
-	return res, err
+	return res, nil
 }
 
 // bypass attempts to re-execute a standard request after first bypassing
@@ -121,7 +121,7 @@ func (c *HTTPClient) bypassCF(req *http.Request, body []byte) (*http.Response, e
 	r1, _ := regexp.Compile(`setTimeout\(function\(\){\s+(var s,t,o,p,b,r,e,a,k,i,n,g,f.+?\r?\n[\s\S]+?a\.value =.+?)\r?\n`)
 	r1Match := r1.FindSubmatch(body)
 	if len(r1Match) != 2 {
-		return nil, errors.New("Failed to match on IUAM challenge")
+		return nil, fmt.Errorf("failed to match on IUAM challenge")
 	}
 	js := string(r1Match[1])
 
@@ -154,7 +154,7 @@ func (c *HTTPClient) bypassCF(req *http.Request, body []byte) (*http.Response, e
 	passMatch := pass.FindSubmatch(body)
 
 	if !(len(vcMatch) == 2 && len(passMatch) == 2) {
-		return nil, errors.New("Failed to extract Cloudflare IUAM challenge")
+		return nil, fmt.Errorf("failed to extract IUAM challenge")
 	}
 
 	// Assemble the CFClearence request
@@ -168,7 +168,7 @@ func (c *HTTPClient) bypassCF(req *http.Request, body []byte) (*http.Response, e
 	// Execute, populate cookies after 5 seconds and re-execute prior request
 	time.Sleep(4000 * time.Millisecond)
 	if _, err := c.Get(u.String(), nil); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting IUAM request: %w", err)
 	}
 	return c.request(req)
 }

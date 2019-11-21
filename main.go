@@ -42,8 +42,8 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "language, l",
-			Value: "eng",
-			Usage: "language code for the subtitles (not all are supported) ex: eng, esp",
+			Value: "en-US",
+			Usage: "language code for the subtitles (not all are supported) ex: en-US, ja-JP",
 		},
 		cli.StringFlag{
 			Name:  "quality, q",
@@ -75,15 +75,11 @@ func download(showURL, user, pass, quality, subLang string) {
 	_, err := os.Stat(tempDir)
 	if err != nil {
 		log.Info("Generating new temporary directory")
-		os.Mkdir(tempDir, 0777)
+		os.Mkdir(tempDir, os.ModePerm)
 	}
 
 	// Generate the HTTP client that will be used through whole lifecycle
-	client, err := common.NewHTTPClient()
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	client := common.NewHTTPClient()
 
 	// Logs the user in and stores their session data in the clients jar
 	log.Info("Logging into Crunchyroll...")
@@ -105,11 +101,11 @@ func download(showURL, user, pass, quality, subLang string) {
 	vp := common.NewVideoProcessor(tempDir)
 
 	// Creates a new show directory which will store all seasons
-	os.Mkdir(show.GetTitle(), 0777)
+	os.Mkdir(show.GetTitle(), os.ModePerm)
 	for _, season := range show.GetSeasons() {
 
 		// Creates a new season directory that will store all episodes
-		os.Mkdir(show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()], 0777)
+		os.Mkdir(show.GetTitle()+string(os.PathSeparator)+seasonMap[season.GetNumber()], os.ModePerm)
 		for _, episode := range season.GetEpisodes() {
 
 			// Retrieves more fine grained episode metadata

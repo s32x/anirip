@@ -17,4 +17,4 @@ func Warn(format string, a ...interface{}) { color.Yellow(prefix+format, a...) }
 func Success(format string, a ...interface{}) { color.Green(prefix+format, a...) }
 
 // Error logs errors
-func Error(err error) { color.Red(prefix + err.Error()) }
+func Error(err error) { color.Red(prefix + "Error: " + err.Error()) }

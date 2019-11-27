@@ -22,6 +22,10 @@
 ```
 $ go get s32x.com/anirip
 ```
+If you did already installed the binary before and want to update - add the -u parameter:
+```
+$ go get -u s32x.com/anirip
+```
 
 ### Usage
 To download shows from Crunchyroll :

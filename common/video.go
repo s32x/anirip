@@ -1,6 +1,7 @@
 package common /* import "s32x.com/anirip/common" */
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
 )
@@ -25,21 +26,22 @@ func (p *VideoProcessor) DumpHLS(url string) error {
 		"-c", "copy", "incomplete.episode.mkv")
 	cmd.Dir = p.tempDir
 	if err := cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("running download command: %w", err)
 	}
 
 	// Rename the file since it's no longer incomplete
 	// and return
-	return Rename(p.tempDir+pathSep+"incomplete.episode.mkv",
-		p.tempDir+pathSep+"episode.mkv", 10)
+	if err := Rename(p.tempDir+pathSep+"incomplete.episode.mkv",p.tempDir+pathSep+"episode.mkv", 10); err != nil {
+		return fmt.Errorf("renaming incomplete episode: %w", err)
+	}
+	return nil
 }
 
 // MergeSubtitles merges the VIDEO.mkv and the VIDEO.ass
 func (p *VideoProcessor) MergeSubtitles(audioLang, subtitleLang string) error {
 	Delete(p.tempDir, "unmerged.episode.mkv")
-	if err := Rename(p.tempDir+pathSep+"episode.mkv",
-		p.tempDir+pathSep+"unmerged.episode.mkv", 10); err != nil {
-		return err
+	if err := Rename(p.tempDir+pathSep+"episode.mkv", p.tempDir+pathSep+"unmerged.episode.mkv", 10); err != nil {
+		return fmt.Errorf("renaming unmerged episode: %w", err)
 	}
 	cmd := new(exec.Cmd)
 	if subtitleLang == "" {
@@ -65,7 +67,7 @@ func (p *VideoProcessor) MergeSubtitles(audioLang, subtitleLang string) error {
 	}
 	cmd.Dir = p.tempDir
 	if err := cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("running download command: %w", err)
 	}
 	Delete(p.tempDir, "subtitles.episode.ass")
 	Delete(p.tempDir, "unmerged.episode.mkv")

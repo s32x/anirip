@@ -2,6 +2,7 @@ package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -53,13 +54,13 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 	// client.Header.Add("Referer", "http://www.crunchyroll.com/"+strings.Split(e.Path, "/")[1])
 	resp, err := client.Get(e.URL, nil)
 	if err != nil {
-		return common.NewError("There was an error requesting the episode doc", err)
+		return fmt.Errorf("getting episode page: %w", err)
 	}
 
 	// Creates the document that will be used to scrape for episode metadata
 	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
-		return common.NewError("There was an error reading the episode doc", err)
+		return fmt.Errorf("generating episode document: %w", err)
 	}
 
 	// Request querystring
@@ -87,13 +88,13 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 	header.Add("X-Requested-With", "ShockwaveFlash/22.0.0.192")
 	resp, err = client.Post("http://www.crunchyroll.com/xml/?"+queryString, header, reqBody)
 	if err != nil {
-		return common.NewError("There was an error retrieving the manifest", err)
+		return fmt.Errorf("getting manifest page: %w", err)
 	}
 
 	// Gets the xml string from the received xml response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return common.NewError("There was an error reading the xml response", err)
+		return fmt.Errorf("reading manifest page: %w", err)
 	}
 
 	// Checks for an unsupported region first
@@ -101,7 +102,7 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 	xmlString := string(body)
 	if strings.Contains(xmlString, "<code>") && strings.Contains(xmlString, "</code>") {
 		if strings.SplitN(strings.SplitN(xmlString, "<code>", 2)[1], "</code>", 2)[0] == "4" {
-			return common.NewError("This video is not available in your region", err)
+			return fmt.Errorf("video not avaliable in your region: %w", err)
 		}
 	}
 
@@ -111,7 +112,7 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 	if strings.Contains(xmlString, "<file>") && strings.Contains(xmlString, "</file>") {
 		eFile = strings.SplitN(strings.SplitN(xmlString, "<file>", 2)[1], "</file>", 2)[0]
 	} else {
-		return common.NewError("No hosts were found for the episode", err)
+		return fmt.Errorf("no episode hosts found: %w", err)
 	}
 
 	e.Title = strings.Replace(strings.Replace(doc.Find("#showmedia_about_name").First().Text(), "“", "", -1), "”", "", -1)
@@ -122,7 +123,10 @@ func (e *Episode) GetEpisodeInfo(client *common.HTTPClient, quality string) erro
 
 // Download downloads entire episode to our temp directory
 func (e *Episode) Download(vp *common.VideoProcessor) error {
-	return vp.DumpHLS(e.StreamURL)
+	if err := vp.DumpHLS(e.StreamURL); err != nil {
+		return fmt.Errorf("dumping HLS stream: %w", err)
+	}
+	return nil
 }
 
 // GetFilename returns the Episodes filename

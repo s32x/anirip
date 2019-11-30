@@ -35,7 +35,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "anirip"
-	app.Version = "1.5.2(12/8/2018)"
+	app.Version = "1.5.5(11/30/2019)"
 	app.Author = "Steven Wolfe"
 	app.Email = "steven@swolfe.me"
 	app.Usage = "anirip username password http://www.crunchyroll.com/miss-kobayashis-dragon-maid"
@@ -43,7 +43,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "language, l",
 			Value: "en-US",
-			Usage: "language code for the subtitles (not all are supported) ex: en-US, ja-JP",
+			Usage: "BCP 47 language code for the subtitles (not all are supported) ex: en-US, ja-JP",
 		},
 		cli.StringFlag{
 			Name:  "quality, q",

@@ -40,6 +40,7 @@ func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language st
 	os.Remove(subOutput)
 
 	// This turns "en-US" into "enUS", which is Crunchyroll's subtitle format
+	isoCode := strings.Split(language, "-")[0]
 	language = strings.ReplaceAll(language, "-", "")
 
 	// Fetch html page for the episode
@@ -92,5 +93,5 @@ func (episode *Episode) DownloadSubtitles(client *common.HTTPClient, language st
 	if err := ioutil.WriteFile(subOutput, buf.Bytes(), os.ModePerm); err != nil {
 		return "", fmt.Errorf("writing file: %w", err)
 	}
-	return language, nil
+	return isoCode, nil
 }

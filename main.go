@@ -47,7 +47,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "quality, q",
-			Value: "1080",
+			Value: "720",
 			Usage: "quality of video to download ex: 1080, 720, 480, 360, android",
 		},
 	}
@@ -60,7 +60,7 @@ func main() {
 			return nil
 		}
 
-		download(args[2], args[0], args[1], c.String("lang"), c.String("lang"))
+		download(args[2], args[0], args[1], c.String("quality"), c.String("language"))
 		return nil
 	}
 

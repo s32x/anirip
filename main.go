@@ -70,7 +70,7 @@ func main() {
 	}
 }
 
-func download(showURL, user, pass, quality, subLang string) {
+func download(showURL, user, pass, quality, origsubLang string) {
 	// Verifies the existence of an anirip folder in our temp directory
 	_, err := os.Stat(tempDir)
 	if err != nil {
@@ -132,8 +132,9 @@ func download(showURL, user, pass, quality, subLang string) {
 				continue
 			}
 
+			subLang := origsubLang
 			// Downloads the subtitles to .ass format
-			log.Info("Downloading subtitles...")
+			log.Info("Downloading subtitles...%s", subLang)
 			subLang, err = episode.DownloadSubtitles(client, subLang, tempDir)
 			if err != nil {
 				log.Error(err)

@@ -2,6 +2,7 @@ package common /* import "s32x.com/anirip/common" */
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -20,7 +21,29 @@ func Rename(src, dst string, i int) error {
 		if i > 0 {
 			return Rename(src, dst, i-1)
 		}
-		return err
+		return fmt.Errorf("renaming file: %w", err)
+	}
+	return nil
+}
+
+func Move(src, dst string) error {
+	source, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("opening source file: %w", err)
+	}
+
+	// Defer executes in bottom-top order, so the file will close before it is removed
+	defer Delete(src)
+	defer source.Close()
+
+	dest, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("creating destination file: %w", err)
+	}
+
+	defer dest.Close()
+	if _, err := io.Copy(dest, source); err != nil {
+		return fmt.Errorf("copying source to destination file: %w", err)
 	}
 	return nil
 }

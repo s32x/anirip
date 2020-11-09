@@ -36,8 +36,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "anirip"
 	app.Version = "1.5.2(12/8/2018)"
-	app.Author = "Steven Wolfe"
-	app.Email = "steven@swolfe.me"
+	app.Author = "s32x"
 	app.Usage = "anirip username password http://www.crunchyroll.com/miss-kobayashis-dragon-maid"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

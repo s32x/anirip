@@ -43,7 +43,7 @@ This application is not endorsed or affiliated with any anime stream provider. T
 The MIT License (MIT)
 =====================
 
-Copyright © 2018 Steven Wolfe
+Copyright © 2020 s32x
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

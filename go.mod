@@ -1,17 +1,23 @@
-module s32x.com/anirip
+module github.com/s32x/anirip
 
-go 1.13
+go 1.17
 
 require (
-	github.com/PuerkitoBio/goquery v1.5.0
-	github.com/andybalholm/cascadia v1.0.1-0.20181012154424-680b6a57bda4 // indirect
-	github.com/fatih/color v1.7.1-0.20181010231311-3f9d52f7176a
-	github.com/mattn/go-colorable v0.1.0 // indirect
-	github.com/mattn/go-isatty v0.0.5-0.20180830101745-3fb116b82035 // indirect
-	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
-	github.com/urfave/cli v1.20.1-0.20181029213200-b67dcf995b6a
-	golang.org/x/net v0.0.0-20181220203305-927f97764cc3 // indirect
-	golang.org/x/sys v0.0.0-20181228144115-9a3f9b0469bb // indirect
+	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/fatih/color v1.13.0
+	github.com/go-resty/resty/v2 v2.7.0
+	github.com/robertkrimen/otto v0.0.0-20211024170158-b87d35c0b86f
+	github.com/urfave/cli v1.22.5
+)
+
+require (
+	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
+	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/russross/blackfriday/v2 v2.0.1 // indirect
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	golang.org/x/net v0.0.0-20211029224645-99673261e6eb // indirect
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
-	s32x.com/httpclient v0.0.0-20181215042144-1edd92c410ce
 )

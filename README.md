@@ -1,9 +1,8 @@
 <p align="center">
 <img src="logo.png" width="310" height="112" border="0" alt="anirip">
 <br>
-<a href="https://circleci.com/gh/s32x/anirip/tree/master"><img src="https://circleci.com/gh/s32x/anirip/tree/master.svg?style=svg" alt="CircleCI"></a>
-<a href="https://goreportcard.com/report/s32x.com/anirip"><img src="https://goreportcard.com/badge/s32x.com/anirip" alt="Go Report Card"></a>
-<a href="https://godoc.org/s32x.com/anirip"><img src="https://godoc.org/s32x.com/anirip?status.svg" alt="GoDoc"></a>
+<a href="https://goreportcard.com/report/github.com/s32x/anirip"><img src="https://goreportcard.com/badge/github.com/s32x/anirip" alt="Go Report Card"></a>
+<a href="https://godoc.org/github.com/s32x/anirip"><img src="https://godoc.org/github.com/s32x/anirip?status.svg" alt="GoDoc"></a>
 </p>
 
 <p align="center">
@@ -20,11 +19,11 @@
 
 **2)** Install Go and run `go get`. This installs the anirip binary on your local system.
 ```
-$ go get s32x.com/anirip
+$ go get github.com/s32x/anirip
 ```
 If you did already installed the binary before and want to update - add the -u parameter:
 ```
-$ go get -u s32x.com/anirip
+$ go get -u github.com/s32x/anirip
 ```
 
 ### Usage
@@ -43,7 +42,7 @@ This application is not endorsed or affiliated with any anime stream provider. T
 The MIT License (MIT)
 =====================
 
-Copyright © 2020 s32x
+Copyright © 2022 s32x
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

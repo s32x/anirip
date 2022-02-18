@@ -1,4 +1,4 @@
-package common /* import "s32x.com/anirip/common" */
+package common
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ func (p *VideoProcessor) DumpHLS(url string) error {
 
 	// Rename the file since it's no longer incomplete
 	// and return
-	if err := Rename(p.tempDir+pathSep+"incomplete.episode.mkv",p.tempDir+pathSep+"episode.mkv", 10); err != nil {
+	if err := Rename(p.tempDir+pathSep+"incomplete.episode.mkv", p.tempDir+pathSep+"episode.mkv", 10); err != nil {
 		return fmt.Errorf("renaming incomplete episode: %w", err)
 	}
 	return nil

@@ -1,4 +1,4 @@
-package common /* import "s32x.com/anirip/common" */
+package common
 
 import (
 	"fmt"
@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/robertkrimen/otto"
-	"s32x.com/anirip/common/log"
-	"s32x.com/httpclient"
+	"github.com/s32x/anirip/common/log"
 )
 
 const (
@@ -46,14 +46,14 @@ func NewHTTPClient() *HTTPClient {
 // one randomly selected from the list
 func randomUA() string {
 	// Retrieve the bytes of the user-agent list
-	useragents, err := httpclient.GetString(uaList)
+	uaListRes, err := resty.New().R().Get(uaList)
 	if err != nil {
 		return defaultUA
 	}
 
 	// Split all user-agents into a slice and return a
 	// single random one
-	ua := strings.Split(useragents, "\n")
+	ua := strings.Split(uaListRes.String(), "\n")
 	if len(ua) == 0 {
 		return defaultUA
 	}

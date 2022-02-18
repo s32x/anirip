@@ -1,4 +1,4 @@
-package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
+package crunchyroll
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"s32x.com/anirip/common"
+	"github.com/s32x/anirip/common"
 )
 
 // Show contins show metadata and child seasons

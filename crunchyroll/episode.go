@@ -1,4 +1,4 @@
-package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
+package crunchyroll
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"s32x.com/anirip/common"
+	"github.com/s32x/anirip/common"
 )
 
 var (

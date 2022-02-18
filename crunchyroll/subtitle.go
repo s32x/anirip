@@ -1,4 +1,4 @@
-package crunchyroll /* import "s32x.com/anirip/crunchyroll" */
+package crunchyroll
 
 import (
 	"bytes"
@@ -6,31 +6,31 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"regexp"
+	"strings"
 
-	"s32x.com/anirip/common"
+	"github.com/s32x/anirip/common"
 )
 
 // Note from turtle: I haven't found a good use for the streams yet but I'll keep looking into it
 type streamStruct struct {
-	Format 		string `json:"format"`
-	AudioLang 	string `json:"audio_lang"`
-	SubLang 	string `json:"hardsub_lang"`
-	urlThingy 	string `json:"url"`
-	Resolution 	string `json:"resolution"`
+	Format     string `json:"format"`
+	AudioLang  string `json:"audio_lang"`
+	SubLang    string `json:"hardsub_lang"`
+	urlThingy  string `json:"url"`
+	Resolution string `json:"resolution"`
 }
 
 type subtitleStruct struct {
-	Language 	string `json:"language"`
+	Language    string `json:"language"`
 	DownloadURL string `json:"url"`
-	Title 		string `json:"title"`
-	Format 		string `json:"format"`
+	Title       string `json:"title"`
+	Format      string `json:"format"`
 }
 
 type configStruct struct {
-	Streams 	[]streamStruct `json:"streams"`
-	Subtitles 	[]subtitleStruct `json:"subtitles"`
+	Streams   []streamStruct   `json:"streams"`
+	Subtitles []subtitleStruct `json:"subtitles"`
 }
 
 // DownloadSubtitles entirely downloads subtitles to our temp directory

@@ -1,14 +1,9 @@
-clean:
-	go clean
 deps:
-	make clean
-	-rm -rf vendor
-	-rm -r glide.yaml
-	-rm -f glide.lock
-	glide init --non-interactive
-	glide install
+	-rm -rf ./vendor go.mod go.sum
+	go clean --modcache
+	go mod init
+	go mod tidy
+	go mod vendor
+	
 test:
-	go clean
 	go test ./...
-run:
-	go run main.go
